@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
+@theme {
+  --color-banana-50: #fffbeb;
+  --color-banana-100: #fef3c7;
+  --color-banana-200: #fde68a;
+  --color-banana-300: #fcd34d;
+  --color-banana-400: #fbbf24;
+  --color-banana-500: #f5a623;
+  --color-banana-600: #d98c0f;
+  --color-banana-700: #b06f0a;
+  --color-banana-800: #8a5608;
+  --color-banana-900: #6b4206;
+
+  --color-forest-50: #eef6f0;
+  --color-forest-100: #d5eadb;
+  --color-forest-200: #aed8b9;
+  --color-forest-300: #7fc091;
+  --color-forest-400: #4fa06c;
+  --color-forest-500: #2f7d4f;
+  --color-forest-600: #1f6b41;
+  --color-forest-700: #1a5636;
+  --color-forest-800: #163f28;
+  --color-forest-900: #0f2a1b;
+
+  --color-sand-50: #fbf9f4;
+  --color-sand-100: #f4efe5;
+  --color-sand-200: #e8e0d0;
+  --color-sand-300: #d6cbb5;
+  --color-sand-400: #b3a68c;
+  --color-sand-500: #8c7f66;
+  --color-sand-600: #6b6153;
+  --color-sand-700: #4f473b;
+  --color-sand-800: #332e27;
+  --color-sand-900: #201c17;
+
+  --font-display: var(--font-jakarta);
+  --font-sans: var(--font-jakarta);
+
+  --shadow-soft: 0 1px 2px rgba(32, 28, 23, 0.04), 0 8px 24px -8px rgba(32, 28, 23, 0.1);
+  --shadow-lift: 0 4px 10px rgba(32, 28, 23, 0.06), 0 18px 40px -12px rgba(32, 28, 23, 0.18);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: var(--color-sand-50);
+  --foreground: var(--color-sand-900);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-lift {
+    box-shadow: var(--shadow-lift);
+  }
+  .bg-grain {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(32, 28, 23, 0.06) 1px,
+      transparent 0
+    );
+    background-size: 18px 18px;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--color-sand-300);
+    border-radius: 999px;
+  }
+}
+
+* {
+  border-color: var(--color-sand-200);
+}
+
+::selection {
+  background: var(--color-banana-200);
+  color: var(--color-sand-900);
 }
