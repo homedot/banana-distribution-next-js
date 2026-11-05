@@ -61,13 +61,3 @@ export function wizardStateFromDistribution(d: Distribution): WizardState {
     customFields: d.customFields,
   };
 }
-
-export const WIZARD_STEPS = [
-  { key: "vendor", label: "Vendor & Stock" },
-  { key: "quantity", label: "Quantity & Quality" },
-  { key: "pricing", label: "Pricing" },
-  { key: "payment", label: "Payment & Extras" },
-  { key: "review", label: "Review & Save" },
-] as const;
-
-export type WizardStepKey = (typeof WIZARD_STEPS)[number]["key"];

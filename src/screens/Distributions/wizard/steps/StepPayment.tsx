@@ -84,8 +84,8 @@ export function StepPayment({
 
       <Input
         label="Dispatch Date"
-        required
         type="date"
+        hint="Defaults to today if left blank"
         value={state.date}
         onChange={(e) => update({ date: e.target.value })}
       />
