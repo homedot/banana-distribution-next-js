@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAppData } from "@/src/store/data-context";
 import { batchRemainingKolas } from "@/src/utils/calculations";
 import { formatNumber } from "@/src/utils/format";
+import { Select } from "@/src/components/ui/Field";
 import { Icon } from "@/src/components/icons";
+import { AddStockEntryModal } from "@/src/components/domain/AddStockEntryModal";
+import type { BrokerBatch } from "@/src/types";
 
 export function BatchPicker({
   value,
@@ -12,64 +15,72 @@ export function BatchPicker({
   excludeBatchId,
 }: {
   value: string;
-  onChange: (batchId: string) => void;
+  // Passes the full batch (not just its id) so callers never have to look it
+  // back up in `data.batches` — see the `onCreated` note below for why that
+  // lookup isn't reliable right after a batch is created inline.
+  onChange: (batch: BrokerBatch | null) => void;
   /** when editing, the record's own batch may already be "closed" by its own quantity — still show it */
   excludeBatchId?: string;
 }) {
   const { data } = useAppData();
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const options = useMemo(() => {
     return data.batches
       .map((batch) => {
         const broker = data.brokers.find((b) => b.id === batch.brokerId);
         const remaining = batchRemainingKolas(batch, data.distributions);
-        const effectiveRemaining =
-          batch.id === excludeBatchId ? remaining + 0 : remaining;
-        return { batch, broker, remaining: effectiveRemaining };
+        return { batch, broker, remaining };
       })
       .filter((o) => o.remaining > 0 || o.batch.id === excludeBatchId)
       .sort((a, b) => b.batch.date.localeCompare(a.batch.date));
   }, [data.batches, data.brokers, data.distributions, excludeBatchId]);
 
+  function handleSelectChange(batchId: string) {
+    const found = data.batches.find((b) => b.id === batchId) ?? null;
+    onChange(found);
+  }
+
   return (
     <div>
-      <span className="mb-1.5 block text-[13px] font-semibold text-sand-700">
-        Stock Source (Broker Batch)<span className="ml-0.5 text-banana-600">*</span>
-      </span>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {options.map(({ batch, broker, remaining }) => {
-          const active = value === batch.id;
-          return (
-            <button
-              key={batch.id}
-              type="button"
-              onClick={() => onChange(batch.id)}
-              className={`flex items-center justify-between gap-2 rounded-xl border px-3.5 py-3 text-left transition cursor-pointer ${
-                active
-                  ? "border-forest-500 bg-forest-50 ring-2 ring-forest-100"
-                  : "border-sand-200 bg-white hover:border-forest-300"
-              }`}
-            >
-              <div>
-                <p className="text-[13.5px] font-semibold text-sand-900">
-                  {broker?.name} <span className="text-sand-400">· {broker?.location}</span>
-                </p>
-                <p className="text-[12px] text-sand-500">
-                  {batch.kayaType} · {formatNumber(remaining)} kolas remaining
-                </p>
-              </div>
-              {active && (
-                <Icon.Check className="h-4 w-4 shrink-0 text-forest-600" />
-              )}
-            </button>
-          );
-        })}
-        {options.length === 0 && (
-          <p className="col-span-2 rounded-xl border border-dashed border-sand-300 px-3.5 py-5 text-center text-[13px] text-sand-400">
-            No active stock available. Record a broker consignment first.
-          </p>
-        )}
-      </div>
+      <Select
+        label="Stock Source (Broker Batch)"
+        required
+        value={value}
+        onChange={(e) => handleSelectChange(e.target.value)}
+        hint={
+          options.length === 0
+            ? "No active stock yet — record one below."
+            : undefined
+        }
+      >
+        <option value="">Select active incoming stock…</option>
+        {options.map(({ batch, broker, remaining }) => (
+          <option key={batch.id} value={batch.id}>
+            {broker?.name} ({broker?.location}) - {batch.kayaType} ·{" "}
+            {formatNumber(remaining)} kolas left
+          </option>
+        ))}
+      </Select>
+
+      <button
+        type="button"
+        onClick={() => setShowAddModal(true)}
+        className="mt-1.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-forest-700 hover:text-forest-800 cursor-pointer"
+      >
+        <Icon.Plus className="h-3.5 w-3.5" />
+        Record new inward stock
+      </button>
+
+      <AddStockEntryModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        // `addBatch` resolves (and we get `batch` here) before React has
+        // re-rendered this component with the updated `data.batches`, so
+        // looking the new batch back up by id here would still miss it.
+        // Pass the object straight through instead.
+        onCreated={(batch) => onChange(batch)}
+      />
     </div>
   );
 }

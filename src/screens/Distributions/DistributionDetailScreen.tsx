@@ -29,6 +29,7 @@ export function DistributionDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const { data, deleteDistribution } = useAppData();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const distribution = data.distributions.find((d) => d.id === id);
 
@@ -56,9 +57,13 @@ export function DistributionDetailScreen({ id }: { id: string }) {
       ? (distribution.amountCollected / distribution.netPayable) * 100
       : 100;
 
-  function handleDelete() {
-    deleteDistribution(distribution!.id);
-    router.push("/distributions");
+  async function handleDelete() {
+    try {
+      await deleteDistribution(distribution!.id);
+      router.push("/distributions");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete distribution");
+    }
   }
 
   return (
@@ -262,6 +267,9 @@ export function DistributionDetailScreen({ id }: { id: string }) {
           <span className="font-semibold text-sand-900">{vendor?.name}</span> and
           restore the stock back to the broker batch. This can&apos;t be undone.
         </p>
+        {deleteError && (
+          <p className="mt-3 text-[13px] font-medium text-red-600">{deleteError}</p>
+        )}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
             Cancel

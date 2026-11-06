@@ -164,7 +164,7 @@ export function CreateDistributionScreen({
   const netPayable = calcNetPayable(grossTotal, discount);
   const balanceDue = calcBalanceDue(netPayable, collected);
 
-  function handleSave() {
+  async function handleSave() {
     setAttempted(true);
     const firstInvalid = sectionErrors.findIndex((e) => e !== null);
     if (firstInvalid !== -1) {
@@ -200,12 +200,16 @@ export function CreateDistributionScreen({
       date: new Date(state.date || todayISO()).toISOString(),
     };
 
-    if (existing) {
-      updateDistribution(existing.id, payload);
-      router.push(`/distributions/${existing.id}`);
-    } else {
-      const created = addDistribution(payload);
-      router.push(`/distributions/${created.id}`);
+    try {
+      if (existing) {
+        await updateDistribution(existing.id, payload);
+        router.push(`/distributions/${existing.id}`);
+      } else {
+        const created = await addDistribution(payload);
+        router.push(`/distributions/${created.id}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save distribution");
     }
   }
 

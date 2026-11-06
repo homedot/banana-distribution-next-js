@@ -7,6 +7,7 @@ import { Input, Select } from "@/src/components/ui/Field";
 import { Button } from "@/src/components/ui/Button";
 import { Icon } from "@/src/components/icons";
 import { KAYA_TYPES } from "@/src/utils/constants";
+import type { BrokerBatch } from "@/src/types";
 
 function todayISO() {
   const d = new Date();
@@ -31,9 +32,12 @@ const emptyForm = {
 export function AddStockEntryModal({
   open,
   onClose,
+  onCreated,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Called with the newly created batch right before the modal closes. */
+  onCreated?: (batch: BrokerBatch) => void;
 }) {
   const { data, addBroker, addBatch } = useAppData();
   const [form, setForm] = useState(emptyForm);
@@ -52,7 +56,7 @@ export function AddStockEntryModal({
     onClose();
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const inward = Number(form.inwardQtyKolas) || 0;
     const weight = Number(form.totalWeightKg) || 0;
     const thandu = Number(form.thanduPerKola) || 0;
@@ -75,29 +79,34 @@ export function AddStockEntryModal({
       return;
     }
 
-    let brokerId = form.brokerId;
-    if (isNewBroker) {
-      const broker = addBroker({
-        name: form.newBrokerName.trim(),
-        location: form.newBrokerLocation.trim() || "—",
-        vehicleNumber: form.newBrokerVehicle.trim() || "—",
-        phone: form.newBrokerPhone.trim(),
+    try {
+      let brokerId = form.brokerId;
+      if (isNewBroker) {
+        const broker = await addBroker({
+          name: form.newBrokerName.trim(),
+          location: form.newBrokerLocation.trim() || "—",
+          vehicleNumber: form.newBrokerVehicle.trim() || "—",
+          phone: form.newBrokerPhone.trim(),
+        });
+        brokerId = broker.id;
+      }
+
+      const batch = await addBatch({
+        brokerId,
+        kayaType: form.kayaType,
+        inwardQtyKolas: inward,
+        totalWeightKg: weight,
+        thanduPerKola: thandu || 1,
+        ratePerKola: rate,
+        date: new Date(form.date || todayISO()).toISOString(),
+        status: "active",
       });
-      brokerId = broker.id;
+
+      onCreated?.(batch);
+      handleClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save consignment");
     }
-
-    addBatch({
-      brokerId,
-      kayaType: form.kayaType,
-      inwardQtyKolas: inward,
-      totalWeightKg: weight,
-      thanduPerKola: thandu || 1,
-      ratePerKola: rate,
-      date: new Date(form.date || todayISO()).toISOString(),
-      status: "active",
-    });
-
-    handleClose();
   }
 
   return (

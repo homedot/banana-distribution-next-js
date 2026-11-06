@@ -199,4 +199,10 @@ export const Icon = {
       <path d="M4 6.5h16M4 12h16M4 17.5h16" />
     </svg>
   ),
+  LogOut: (p: IconProps) => (
+    <svg {...base(p)}>
+      <path d="M9 4.5H5.5a1.5 1.5 0 0 0-1.5 1.5v12a1.5 1.5 0 0 0 1.5 1.5H9" />
+      <path d="M15.5 16.5 20 12l-4.5-4.5M20 12H9" />
+    </svg>
+  ),
 };

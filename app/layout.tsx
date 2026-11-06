@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { DataProvider } from "@/src/store/data-context";
-import { AppShell } from "@/src/components/layout/AppShell";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -19,11 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${jakarta.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans">
-        <DataProvider>
-          <AppShell>{children}</AppShell>
-        </DataProvider>
-      </body>
+      <body className="min-h-full font-sans">{children}</body>
     </html>
   );
 }

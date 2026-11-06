@@ -1,11 +1,11 @@
 "use client";
 
-import { useAppData } from "@/src/store/data-context";
 import { VendorPicker } from "@/src/components/domain/VendorPicker";
 import { BatchPicker } from "@/src/components/domain/BatchPicker";
 import { Input } from "@/src/components/ui/Field";
 import { Icon } from "@/src/components/icons";
 import type { WizardState } from "@/src/screens/Distributions/wizard/types";
+import type { BrokerBatch } from "@/src/types";
 
 export function StepVendorStock({
   state,
@@ -16,12 +16,9 @@ export function StepVendorStock({
   update: (patch: Partial<WizardState>) => void;
   editingBatchId?: string;
 }) {
-  const { data } = useAppData();
-
-  function handleBatchChange(batchId: string) {
-    const batch = data.batches.find((b) => b.id === batchId);
+  function handleBatchChange(batch: BrokerBatch | null) {
     update({
-      batchId,
+      batchId: batch?.id ?? "",
       kayaType: batch?.kayaType ?? "",
       dailySellingRate:
         state.dailySellingRate || (batch ? String(batch.ratePerKola + 6) : ""),

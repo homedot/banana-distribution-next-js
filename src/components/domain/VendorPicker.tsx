@@ -26,6 +26,7 @@ export function VendorPicker({
     phone: "",
     location: SERVICE_AREAS[0] as string,
   });
+  const [error, setError] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,12 +58,17 @@ export function VendorPicker({
     setQuery("");
   }
 
-  function handleCreateVendor() {
+  async function handleCreateVendor() {
     if (!newVendor.name.trim()) return;
-    const created = addVendor(newVendor);
-    selectVendor(created);
-    setShowAddForm(false);
-    setNewVendor({ name: "", contactPerson: "", phone: "", location: SERVICE_AREAS[0] });
+    try {
+      const created = await addVendor(newVendor);
+      selectVendor(created);
+      setShowAddForm(false);
+      setNewVendor({ name: "", contactPerson: "", phone: "", location: SERVICE_AREAS[0] });
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add vendor");
+    }
   }
 
   return (
@@ -189,6 +195,9 @@ export function VendorPicker({
                     </button>
                   ))}
                 </div>
+                {error && (
+                  <p className="px-1 text-[12px] font-medium text-red-600">{error}</p>
+                )}
                 <Button size="sm" className="w-full" onClick={handleCreateVendor}>
                   <Icon.Check className="h-3.5 w-3.5" /> Save vendor &amp; select
                 </Button>

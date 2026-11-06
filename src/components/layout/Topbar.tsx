@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/src/components/icons";
 import { Button } from "@/src/components/ui/Button";
 
@@ -27,7 +27,14 @@ function resolveTitle(pathname: string) {
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { title, subtitle } = resolveTitle(pathname);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-4 border-b border-sand-200/80 bg-sand-50/85 px-5 backdrop-blur lg:px-8">
@@ -53,9 +60,14 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
             New Distribution
           </Button>
         </Link>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest-800 text-[12px] font-bold text-white">
-          SM
-        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="Log out"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest-800 text-white transition hover:bg-forest-700 cursor-pointer"
+        >
+          <Icon.LogOut className="h-[18px] w-[18px]" />
+        </button>
       </div>
     </header>
   );

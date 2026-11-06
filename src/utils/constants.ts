@@ -23,8 +23,6 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 
 export const SERVICE_AREAS = ["Ernakulam", "Thrissur"] as const;
 
-export const STORAGE_KEY = "banana-distribution-data-v1";
-
 export const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: "grid" },
   { href: "/distributions", label: "Distributions", icon: "truck" },
