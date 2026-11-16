@@ -4,9 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Vendor } from "@/src/types";
 import { useAppData } from "@/src/store/data-context";
 import { Icon } from "@/src/components/icons";
-import { Input } from "@/src/components/ui/Field";
-import { Button } from "@/src/components/ui/Button";
-import { SERVICE_AREAS } from "@/src/utils/constants";
 import { initials } from "@/src/utils/format";
 
 export function VendorPicker({
@@ -16,17 +13,9 @@ export function VendorPicker({
   value: string;
   onChange: (vendorId: string) => void;
 }) {
-  const { data, addVendor } = useAppData();
+  const { data } = useAppData();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newVendor, setNewVendor] = useState({
-    name: "",
-    contactPerson: "",
-    phone: "",
-    location: SERVICE_AREAS[0] as string,
-  });
-  const [error, setError] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,19 +45,6 @@ export function VendorPicker({
     onChange(v.id);
     setOpen(false);
     setQuery("");
-  }
-
-  async function handleCreateVendor() {
-    if (!newVendor.name.trim()) return;
-    try {
-      const created = await addVendor(newVendor);
-      selectVendor(created);
-      setShowAddForm(false);
-      setNewVendor({ name: "", contactPerson: "", phone: "", location: SERVICE_AREAS[0] });
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add vendor");
-    }
   }
 
   return (
@@ -121,7 +97,9 @@ export function VendorPicker({
           <div className="max-h-56 overflow-y-auto scrollbar-thin py-1">
             {filtered.length === 0 && (
               <p className="px-3.5 py-3 text-[13px] text-sand-400">
-                No vendors match &ldquo;{query}&rdquo;
+                No vendors match &ldquo;{query}&rdquo;. Use{" "}
+                <span className="font-semibold text-sand-600">Vendors</span> in the
+                menu to add one.
               </p>
             )}
             {filtered.map((v) => (
@@ -142,67 +120,6 @@ export function VendorPicker({
                 </span>
               </button>
             ))}
-          </div>
-
-          <div className="border-t border-sand-100 p-2">
-            {!showAddForm ? (
-              <button
-                type="button"
-                onClick={() => setShowAddForm(true)}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-forest-700 hover:bg-forest-50 cursor-pointer"
-              >
-                <Icon.Plus className="h-4 w-4" />
-                Add &ldquo;{query || "new vendor"}&rdquo; on the fly
-              </button>
-            ) : (
-              <div className="space-y-2 p-1.5">
-                <Input
-                  placeholder="Shop / vendor name"
-                  value={newVendor.name || query}
-                  onChange={(e) =>
-                    setNewVendor((s) => ({ ...s, name: e.target.value }))
-                  }
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="Contact person"
-                    value={newVendor.contactPerson}
-                    onChange={(e) =>
-                      setNewVendor((s) => ({ ...s, contactPerson: e.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder="Phone"
-                    value={newVendor.phone}
-                    onChange={(e) =>
-                      setNewVendor((s) => ({ ...s, phone: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="flex gap-1.5">
-                  {SERVICE_AREAS.map((area) => (
-                    <button
-                      type="button"
-                      key={area}
-                      onClick={() => setNewVendor((s) => ({ ...s, location: area }))}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer ${
-                        newVendor.location === area
-                          ? "bg-forest-700 text-white"
-                          : "bg-sand-100 text-sand-600"
-                      }`}
-                    >
-                      {area}
-                    </button>
-                  ))}
-                </div>
-                {error && (
-                  <p className="px-1 text-[12px] font-medium text-red-600">{error}</p>
-                )}
-                <Button size="sm" className="w-full" onClick={handleCreateVendor}>
-                  <Icon.Check className="h-3.5 w-3.5" /> Save vendor &amp; select
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       )}

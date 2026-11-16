@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAppData } from "@/src/store/data-context";
-import { distributionRefs, sortedDistributions } from "@/src/store/selectors";
+import { saleRefs, sortedSales } from "@/src/store/selectors";
 import { paymentStatus } from "@/src/utils/calculations";
-import { formatCurrency, formatDate, formatNumber, initials } from "@/src/utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatNumber,
+  initials,
+} from "@/src/utils/format";
 import { Card, CardBody } from "@/src/components/ui/Card";
 import { Icon } from "@/src/components/icons";
 import { Button } from "@/src/components/ui/Button";
@@ -20,16 +25,16 @@ const FILTERS: { value: "all" | PaymentStatus; label: string }[] = [
   { value: "paid", label: "Paid" },
 ];
 
-export function DistributionsListScreen() {
+export function SalesListScreen() {
   const { data } = useAppData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | PaymentStatus>("all");
 
   const list = useMemo(() => {
-    const all = sortedDistributions(data);
+    const all = sortedSales(data);
     const q = query.trim().toLowerCase();
     return all.filter((d) => {
-      const { vendor, broker } = distributionRefs(data, d);
+      const { vendor, broker } = saleRefs(data, d);
       if (filter !== "all" && paymentStatus(d) !== filter) return false;
       if (!q) return true;
       return (
@@ -83,12 +88,12 @@ export function DistributionsListScreen() {
             <div className="p-5">
               <EmptyState
                 icon={<Icon.Truck className="h-6 w-6" />}
-                title="No distributions found"
+                title="No Sales found"
                 description="Try a different search, or create a new dispatch."
                 action={
                   <Link href="/distributions/new">
                     <Button size="sm">
-                      <Icon.Plus className="h-3.5 w-3.5" /> New Distribution
+                      <Icon.Plus className="h-3.5 w-3.5" /> New Sale
                     </Button>
                   </Link>
                 }
@@ -102,8 +107,12 @@ export function DistributionsListScreen() {
                     <th className="px-5 py-3 font-semibold">Vendor</th>
                     <th className="px-3 py-3 font-semibold">Broker / Kaya</th>
                     <th className="px-3 py-3 font-semibold text-right">Qty</th>
-                    <th className="px-3 py-3 font-semibold text-right">Net Payable</th>
-                    <th className="px-3 py-3 font-semibold text-right">Balance</th>
+                    <th className="px-3 py-3 font-semibold text-right">
+                      Net Payable
+                    </th>
+                    <th className="px-3 py-3 font-semibold text-right">
+                      Balance
+                    </th>
                     <th className="px-3 py-3 font-semibold">Status</th>
                     <th className="px-3 py-3 font-semibold">Date</th>
                     <th className="px-5 py-3" />
@@ -111,7 +120,7 @@ export function DistributionsListScreen() {
                 </thead>
                 <tbody className="divide-y divide-sand-100">
                   {list.map((d) => {
-                    const { vendor, broker } = distributionRefs(data, d);
+                    const { vendor, broker } = saleRefs(data, d);
                     return (
                       <tr key={d.id} className="transition hover:bg-sand-50/70">
                         <td className="px-5 py-3">
@@ -125,8 +134,12 @@ export function DistributionsListScreen() {
                           </div>
                         </td>
                         <td className="px-3 py-3 text-sand-600">
-                          <p className="font-medium text-sand-700">{broker?.name ?? "—"}</p>
-                          <p className="text-[11.5px] text-sand-400">{d.kayaType}</p>
+                          <p className="font-medium text-sand-700">
+                            {broker?.name ?? "—"}
+                          </p>
+                          <p className="text-[11.5px] text-sand-400">
+                            {d.kayaType}
+                          </p>
                         </td>
                         <td className="px-3 py-3 text-right font-medium text-sand-700">
                           {formatNumber(d.kolaQuantity)} kolas
@@ -135,12 +148,16 @@ export function DistributionsListScreen() {
                           {formatCurrency(d.netPayable)}
                         </td>
                         <td className="px-3 py-3 text-right font-semibold text-red-600">
-                          {d.balanceDue > 0 ? formatCurrency(d.balanceDue) : "—"}
+                          {d.balanceDue > 0
+                            ? formatCurrency(d.balanceDue)
+                            : "—"}
                         </td>
                         <td className="px-3 py-3">
-                          <PaymentStatusBadge distribution={d} />
+                          <PaymentStatusBadge sale={d} />
                         </td>
-                        <td className="px-3 py-3 text-sand-500">{formatDate(d.date)}</td>
+                        <td className="px-3 py-3 text-sand-500">
+                          {formatDate(d.date)}
+                        </td>
                         <td className="px-5 py-3 text-right">
                           <Link href={`/distributions/${d.id}`}>
                             <Button variant="ghost" size="sm">

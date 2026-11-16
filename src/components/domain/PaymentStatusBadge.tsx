@@ -1,4 +1,4 @@
-import type { Distribution } from "@/src/types";
+import type { Sale } from "@/src/types";
 import { paymentStatus } from "@/src/utils/calculations";
 import { Badge } from "@/src/components/ui/Badge";
 
@@ -8,8 +8,8 @@ const config = {
   pending: { tone: "danger" as const, label: "Pending" },
 };
 
-export function PaymentStatusBadge({ distribution }: { distribution: Distribution }) {
-  const status = paymentStatus(distribution);
+export function PaymentStatusBadge({ sale }: { sale: Sale }) {
+  const status = paymentStatus(sale);
   const { tone, label } = config[status];
   return (
     <Badge tone={tone} dot>

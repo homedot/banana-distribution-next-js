@@ -8,6 +8,14 @@ interface StatCardProps {
   tone?: "banana" | "forest" | "info" | "danger" | "neutral";
   trend?: string;
   trendTone?: "up" | "down" | "neutral";
+  /** A money figure shown large under the label, for numbers that must be easy to read. */
+  amount?: {
+    label: string;
+    value: string;
+    /** Optional smaller line under the figure, e.g. "of ₹1,20,000 billed". */
+    note?: string;
+    tone?: "danger" | "success";
+  };
 }
 
 const toneClasses = {
@@ -25,6 +33,7 @@ export function StatCard({
   tone = "neutral",
   trend,
   trendTone = "neutral",
+  amount,
 }: StatCardProps) {
   return (
     <div className="rounded-2xl border border-sand-200/80 bg-white p-5 shadow-soft transition hover:shadow-lift">
@@ -54,6 +63,34 @@ export function StatCard({
         {value}
       </p>
       <p className="mt-1.5 text-[13px] font-medium text-sand-500">{label}</p>
+      {amount && (
+        <div
+          className={cn(
+            "mt-4 rounded-xl px-4 py-3",
+            amount.tone === "success" ? "bg-emerald-50" : "bg-red-50",
+          )}
+        >
+          <p
+            className={cn(
+              "text-[15px] font-bold",
+              amount.tone === "success" ? "text-emerald-800" : "text-red-800",
+            )}
+          >
+            {amount.label}
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-[30px] font-extrabold leading-tight tracking-tight",
+              amount.tone === "success" ? "text-emerald-700" : "text-red-700",
+            )}
+          >
+            {amount.value}
+          </p>
+          {amount.note && (
+            <p className="mt-1 text-[14px] font-semibold text-sand-600">{amount.note}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

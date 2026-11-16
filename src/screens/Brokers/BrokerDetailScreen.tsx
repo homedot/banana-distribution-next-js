@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useAppData } from "@/src/store/data-context";
 import { getBrokerSummary } from "@/src/store/selectors";
 import { formatCurrency, formatDate, formatNumber } from "@/src/utils/format";
-import { Card, CardBody, CardHeader, CardTitle } from "@/src/components/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { Icon } from "@/src/components/icons";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
@@ -30,7 +35,15 @@ export function BrokerDetailScreen({ id }: { id: string }) {
     );
   }
 
-  const { broker, batches, inwardKolas, dispatchedKolas, remainingKolas, totalCollected, totalPending } = summary;
+  const {
+    broker,
+    batches,
+    inwardKolas,
+    dispatchedKolas,
+    remainingKolas,
+    totalCollected,
+    totalPending,
+  } = summary;
 
   return (
     <div className="space-y-5">
@@ -47,7 +60,9 @@ export function BrokerDetailScreen({ id }: { id: string }) {
             {broker.name.slice(0, 2).toUpperCase()}
           </span>
           <div>
-            <h2 className="text-[20px] font-extrabold text-sand-900">{broker.name}</h2>
+            <h2 className="text-[20px] font-extrabold text-sand-900">
+              {broker.name}
+            </h2>
             <p className="flex items-center gap-1.5 text-[12.5px] text-sand-500">
               <Icon.MapPin className="h-3.5 w-3.5" /> {broker.location} ·{" "}
               <Icon.Phone className="h-3.5 w-3.5" /> {broker.phone}
@@ -55,7 +70,9 @@ export function BrokerDetailScreen({ id }: { id: string }) {
           </div>
         </div>
         <Badge tone={remainingKolas > 0 ? "banana" : "neutral"}>
-          {remainingKolas > 0 ? `${formatNumber(remainingKolas)} kolas active` : "Fully dispatched"}
+          {remainingKolas > 0
+            ? `${formatNumber(remainingKolas)} kolas active`
+            : "Fully dispatched"}
         </Badge>
       </div>
 
@@ -65,7 +82,9 @@ export function BrokerDetailScreen({ id }: { id: string }) {
             <p className="text-[18px] font-extrabold text-sand-900">
               {formatNumber(inwardKolas)}
             </p>
-            <p className="text-[11px] font-medium text-sand-400">Inward Kolas</p>
+            <p className="text-[11px] font-medium text-sand-400">
+              Inward Kolas
+            </p>
           </CardBody>
         </Card>
         <Card>
@@ -95,83 +114,109 @@ export function BrokerDetailScreen({ id }: { id: string }) {
       </div>
 
       <div className="space-y-5">
-        {batches.map(({ batch, dispatchedKolas: batchDispatched, remainingKolas: batchRemaining, distributions }) => {
-          const pct = batch.inwardQtyKolas > 0 ? (batchDispatched / batch.inwardQtyKolas) * 100 : 0;
-          return (
-            <Card key={batch.id}>
-              <CardHeader>
-                <div>
-                  <CardTitle>
-                    {batch.kayaType} · {formatDate(batch.date)}
-                  </CardTitle>
-                  <p className="mt-1 text-[12px] text-sand-500">
-                    {formatNumber(batch.inwardQtyKolas)} kolas · {formatNumber(batch.totalWeightKg)} kg ·{" "}
-                    {batch.thanduPerKola} thandu/kola · bought at {formatCurrency(batch.ratePerKola)}/kola
-                  </p>
-                </div>
-                <Badge tone={batchRemaining === 0 ? "neutral" : "banana"}>
-                  {batchRemaining === 0 ? "Closed" : `${formatNumber(batchRemaining)} remaining`}
-                </Badge>
-              </CardHeader>
-              <CardBody className="pt-3">
-                <ProgressBar value={pct} />
-
-                {distributions.length === 0 ? (
-                  <p className="mt-4 text-[13px] text-sand-400">
-                    No dispatches recorded against this batch yet.
-                  </p>
-                ) : (
-                  <div className="mt-4 overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-left text-[13px]">
-                      <thead>
-                        <tr className="border-b border-sand-100 text-[11px] uppercase tracking-wide text-sand-400">
-                          <th className="py-2 font-semibold">Vendor / Shop</th>
-                          <th className="py-2 font-semibold text-right">Kola</th>
-                          <th className="py-2 font-semibold text-right">Rate</th>
-                          <th className="py-2 font-semibold text-right">Due</th>
-                          <th className="py-2 font-semibold text-right">Paid</th>
-                          <th className="py-2 font-semibold">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-sand-100">
-                        {distributions.map((d) => {
-                          const vendor = data.vendors.find((v) => v.id === d.vendorId);
-                          return (
-                            <tr key={d.id}>
-                              <td className="py-2.5">
-                                <Link
-                                  href={`/distributions/${d.id}`}
-                                  className="font-semibold text-sand-900 hover:text-forest-700"
-                                >
-                                  {vendor?.name ?? "—"}
-                                </Link>
-                              </td>
-                              <td className="py-2.5 text-right text-sand-700">
-                                {formatNumber(d.kolaQuantity)}
-                              </td>
-                              <td className="py-2.5 text-right text-sand-700">
-                                {formatCurrency(d.dailySellingRate)}
-                              </td>
-                              <td className="py-2.5 text-right font-semibold text-sand-900">
-                                {formatCurrency(d.netPayable)}
-                              </td>
-                              <td className="py-2.5 text-right text-sand-700">
-                                {formatCurrency(d.amountCollected)}
-                              </td>
-                              <td className="py-2.5">
-                                <PaymentStatusBadge distribution={d} />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+        {batches.map(
+          ({
+            batch,
+            dispatchedKolas: batchDispatched,
+            remainingKolas: batchRemaining,
+            sales,
+          }) => {
+            const pct =
+              batch.inwardQtyKolas > 0
+                ? (batchDispatched / batch.inwardQtyKolas) * 100
+                : 0;
+            return (
+              <Card key={batch.id}>
+                <CardHeader>
+                  <div>
+                    <CardTitle>
+                      {batch.kayaType} · {formatDate(batch.date)}
+                    </CardTitle>
+                    <p className="mt-1 text-[12px] text-sand-500">
+                      {formatNumber(batch.inwardQtyKolas)} kolas ·{" "}
+                      {formatNumber(batch.totalWeightKg)} kg ·{" "}
+                      {batch.thanduPerKola} thandu/kola · bought at{" "}
+                      {formatCurrency(batch.ratePerKola)}/kola
+                    </p>
                   </div>
-                )}
-              </CardBody>
-            </Card>
-          );
-        })}
+                  <Badge tone={batchRemaining === 0 ? "neutral" : "banana"}>
+                    {batchRemaining === 0
+                      ? "Closed"
+                      : `${formatNumber(batchRemaining)} remaining`}
+                  </Badge>
+                </CardHeader>
+                <CardBody className="pt-3">
+                  <ProgressBar value={pct} />
+
+                  {sales.length === 0 ? (
+                    <p className="mt-4 text-[13px] text-sand-400">
+                      No dispatches recorded against this batch yet.
+                    </p>
+                  ) : (
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full min-w-[640px] text-left text-[13px]">
+                        <thead>
+                          <tr className="border-b border-sand-100 text-[11px] uppercase tracking-wide text-sand-400">
+                            <th className="py-2 font-semibold">
+                              Vendor / Shop
+                            </th>
+                            <th className="py-2 font-semibold text-right">
+                              Kola
+                            </th>
+                            <th className="py-2 font-semibold text-right">
+                              Rate
+                            </th>
+                            <th className="py-2 font-semibold text-right">
+                              Due
+                            </th>
+                            <th className="py-2 font-semibold text-right">
+                              Paid
+                            </th>
+                            <th className="py-2 font-semibold">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-sand-100">
+                          {sales.map((d) => {
+                            const vendor = data.vendors.find(
+                              (v) => v.id === d.vendorId,
+                            );
+                            return (
+                              <tr key={d.id}>
+                                <td className="py-2.5">
+                                  <Link
+                                    href={`/distributions/${d.id}`}
+                                    className="font-semibold text-sand-900 hover:text-forest-700"
+                                  >
+                                    {vendor?.name ?? "—"}
+                                  </Link>
+                                </td>
+                                <td className="py-2.5 text-right text-sand-700">
+                                  {formatNumber(d.kolaQuantity)}
+                                </td>
+                                <td className="py-2.5 text-right text-sand-700">
+                                  {formatCurrency(d.dailySellingRate)}
+                                </td>
+                                <td className="py-2.5 text-right font-semibold text-sand-900">
+                                  {formatCurrency(d.netPayable)}
+                                </td>
+                                <td className="py-2.5 text-right text-sand-700">
+                                  {formatCurrency(d.amountCollected)}
+                                </td>
+                                <td className="py-2.5">
+                                  <PaymentStatusBadge sale={d} />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            );
+          },
+        )}
       </div>
     </div>
   );

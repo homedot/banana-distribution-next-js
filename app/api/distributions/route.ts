@@ -1,4 +1,4 @@
 export {
-  listDistributions as GET,
-  createDistribution as POST,
-} from "@/backend/controllers/distribution.controller";
+  listSales as GET,
+  createSale as POST,
+} from "@/backend/controllers/sale.controller";

@@ -2,11 +2,20 @@
 
 import { useMemo } from "react";
 import { useAppData } from "@/src/store/data-context";
-import { getBrokerSummaries, getDashboardStats, getVendorSummaries } from "@/src/store/selectors";
+import {
+  getBrokerSummaries,
+  getDashboardStats,
+  getVendorSummaries,
+} from "@/src/store/selectors";
 import { paymentStatus } from "@/src/utils/calculations";
 import { formatCurrency, formatNumber } from "@/src/utils/format";
 import { Colors } from "@/src/utils/colors";
-import { Card, CardBody, CardHeader, CardTitle } from "@/src/components/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/Card";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { Icon } from "@/src/components/icons";
 import { Badge } from "@/src/components/ui/Badge";
@@ -24,7 +33,7 @@ export function ReportsScreen() {
     let paid = 0;
     let partial = 0;
     let pending = 0;
-    for (const d of data.distributions) {
+    for (const d of data.sales) {
       const s = paymentStatus(d);
       if (s === "paid") paid += 1;
       else if (s === "partial") partial += 1;
@@ -35,24 +44,24 @@ export function ReportsScreen() {
       { label: "Partial", value: partial, color: Colors.warning.text },
       { label: "Pending", value: pending, color: Colors.danger.text },
     ].filter((d) => d.value > 0);
-  }, [data.distributions]);
+  }, [data.sales]);
 
   const kayaRevenue = useMemo(() => {
     const map = new Map<string, number>();
-    for (const d of data.distributions) {
+    for (const d of data.sales) {
       map.set(d.kayaType, (map.get(d.kayaType) ?? 0) + d.netPayable);
     }
     return Array.from(map.entries())
       .sort((a, b) => b[1] - a[1])
       .map(([label, value]) => ({ label, value: Math.round(value) }));
-  }, [data.distributions]);
+  }, [data.sales]);
 
   const areaBreakdown = useMemo(() => {
     return SERVICE_AREAS.map((area) => {
       const vendorIds = new Set(
-        data.vendors.filter((v) => v.location === area).map((v) => v.id)
+        data.vendors.filter((v) => v.location === area).map((v) => v.id),
       );
-      const items = data.distributions.filter((d) => vendorIds.has(d.vendorId));
+      const items = data.sales.filter((d) => vendorIds.has(d.vendorId));
       return {
         area,
         count: items.length,
@@ -61,11 +70,14 @@ export function ReportsScreen() {
         pending: items.reduce((s, d) => s + d.balanceDue, 0),
       };
     });
-  }, [data.distributions, data.vendors]);
+  }, [data.sales, data.vendors]);
 
   const topVendors = useMemo(
-    () => [...vendorSummaries].sort((a, b) => b.totalNetPayable - a.totalNetPayable).slice(0, 5),
-    [vendorSummaries]
+    () =>
+      [...vendorSummaries]
+        .sort((a, b) => b.totalNetPayable - a.totalNetPayable)
+        .slice(0, 5),
+    [vendorSummaries],
   );
 
   return (
@@ -92,7 +104,7 @@ export function ReportsScreen() {
         <StatCard
           label="Avg. Dispatch Value"
           value={formatCurrency(
-            stats.totalDistributions > 0 ? stats.totalNetPayable / stats.totalDistributions : 0
+            stats.totalSales > 0 ? stats.totalNetPayable / stats.totalSales : 0,
           )}
           icon={<Icon.Chart className="h-5 w-5" />}
           tone="info"
@@ -105,12 +117,15 @@ export function ReportsScreen() {
             <CardTitle>Revenue by Kaya Type</CardTitle>
           </CardHeader>
           <CardBody>
-            <BarChart data={kayaRevenue} valueFormatter={(v) => formatCurrency(v)} />
+            <BarChart
+              data={kayaRevenue}
+              valueFormatter={(v) => formatCurrency(v)}
+            />
           </CardBody>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Distributions by Status</CardTitle>
+            <CardTitle>Sales by Status</CardTitle>
           </CardHeader>
           <CardBody>
             <DonutChart data={statusBreakdown} />
@@ -137,8 +152,12 @@ export function ReportsScreen() {
               <tbody className="divide-y divide-sand-100">
                 {areaBreakdown.map((a) => (
                   <tr key={a.area}>
-                    <td className="py-2.5 font-semibold text-sand-900">{a.area}</td>
-                    <td className="py-2.5 text-right text-sand-700">{a.count}</td>
+                    <td className="py-2.5 font-semibold text-sand-900">
+                      {a.area}
+                    </td>
+                    <td className="py-2.5 text-right text-sand-700">
+                      {a.count}
+                    </td>
                     <td className="py-2.5 text-right text-sand-700">
                       {formatNumber(a.kolas)}
                     </td>
@@ -171,8 +190,12 @@ export function ReportsScreen() {
                     {i + 1}
                   </span>
                   <div className="flex-1">
-                    <p className="text-[13px] font-semibold text-sand-900">{v.vendor.name}</p>
-                    <p className="text-[11px] text-sand-400">{v.vendor.location}</p>
+                    <p className="text-[13px] font-semibold text-sand-900">
+                      {v.vendor.name}
+                    </p>
+                    <p className="text-[11px] text-sand-400">
+                      {v.vendor.location}
+                    </p>
                   </div>
                   <span className="text-[13px] font-bold text-sand-900">
                     {formatCurrency(v.totalNetPayable)}
@@ -204,8 +227,12 @@ export function ReportsScreen() {
               {brokerSummaries.map((s) => (
                 <tr key={s.broker.id}>
                   <td className="py-2.5">
-                    <p className="font-semibold text-sand-900">{s.broker.name}</p>
-                    <p className="text-[11px] text-sand-400">{s.broker.location}</p>
+                    <p className="font-semibold text-sand-900">
+                      {s.broker.name}
+                    </p>
+                    <p className="text-[11px] text-sand-400">
+                      {s.broker.location}
+                    </p>
                   </td>
                   <td className="py-2.5 text-right text-sand-700">
                     {formatNumber(s.inwardKolas)}

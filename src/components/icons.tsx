@@ -82,6 +82,12 @@ export const Icon = {
       <path d="m15 6-6 6 6 6" />
     </svg>
   ),
+  Calendar: (p: IconProps) => (
+    <svg {...base(p)}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  ),
   Check: (p: IconProps) => (
     <svg {...base(p)}>
       <path d="m5 13 4 4L19 7" />
@@ -205,4 +211,21 @@ export const Icon = {
       <path d="M15.5 16.5 20 12l-4.5-4.5M20 12H9" />
     </svg>
   ),
+  UserPlus: (p: IconProps) => (
+    <svg {...base(p)}>
+      <circle cx="10" cy="8.5" r="3.5" />
+      <path d="M3.5 19.5c0-3.3 2.9-5.5 6.5-5.5 1.3 0 2.5.3 3.5.8" />
+      <path d="M18 14v6M15 17h6" />
+    </svg>
+  ),
+};
+
+/** Icons for NAV_ITEMS, keyed by their `icon` value. Shared by Sidebar and SidebarSkeleton. */
+export const NAV_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
+  grid: Icon.Grid,
+  truck: Icon.Truck,
+  package: Icon.Package,
+  store: Icon.Store,
+  chart: Icon.Chart,
+  wallet: Icon.Wallet,
 };

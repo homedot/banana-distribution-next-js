@@ -1,5 +1,5 @@
 export {
-  getDistribution as GET,
-  updateDistribution as PUT,
-  deleteDistribution as DELETE,
-} from "@/backend/controllers/distribution.controller";
+  getSale as GET,
+  updateSale as PUT,
+  deleteSale as DELETE,
+} from "@/backend/controllers/sale.controller";

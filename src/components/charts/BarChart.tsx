@@ -25,43 +25,41 @@ export function BarChart({
 
   if (data.length === 0) {
     return (
-      <div
-        style={{ height }}
-        className="flex items-center justify-center text-sm text-sand-400"
-      >
+      <div style={{ height }} className="flex items-center justify-center text-sm text-sand-400">
         No data yet
       </div>
     );
   }
 
   return (
-    <div className="flex items-end gap-2.5 sm:gap-4" style={{ height }}>
+    <div className="flex gap-2.5 sm:gap-4" style={{ height }}>
       {data.map((d, i) => {
         const pct = Math.max(3, (d.value / max) * 100);
         const isHovered = hovered === i;
         return (
           <div
             key={d.label + i}
-            className="group relative flex flex-1 flex-col items-center justify-end gap-2"
+            className="group flex h-full flex-1 flex-col items-center gap-2"
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}
           >
-            {isHovered && (
-              <div className="absolute -top-9 z-10 whitespace-nowrap rounded-lg bg-forest-900 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lift">
-                {valueFormatter(d.value)}
+            <div className="flex w-full flex-1 items-end">
+              <div
+                className="relative w-full rounded-t-lg transition-all duration-300"
+                style={{
+                  height: `${pct}%`,
+                  backgroundColor: isHovered ? Colors.forest[600] : color,
+                  minHeight: 4,
+                }}
+              >
+                {isHovered && (
+                  <div className="absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-forest-900 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lift">
+                    {valueFormatter(d.value)}
+                  </div>
+                )}
               </div>
-            )}
-            <div
-              className="w-full rounded-t-lg transition-all duration-300"
-              style={{
-                height: `${pct}%`,
-                backgroundColor: isHovered ? Colors.forest[600] : color,
-                minHeight: 4,
-              }}
-            />
-            <span className="text-[11px] font-medium text-sand-500">
-              {d.label}
-            </span>
+            </div>
+            <span className="text-[11px] font-medium text-sand-500">{d.label}</span>
           </div>
         );
       })}

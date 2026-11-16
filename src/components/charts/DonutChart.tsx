@@ -19,8 +19,11 @@ export function DonutChart({
   thickness?: number;
 }) {
   const id = useId();
-  const [hovered, setHovered] = useState<number | null>(null);
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const [hoveredRaw, setHovered] = useState<number | null>(null);
+  // Ignore a stale hover index if the data shrinks while a slice is hovered.
+  const hovered = hoveredRaw !== null && hoveredRaw < data.length ? hoveredRaw : null;
+  const realTotal = data.reduce((s, d) => s + (Number.isFinite(d.value) ? d.value : 0), 0);
+  const total = realTotal || 1; // divisor only — avoids divide-by-zero
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -72,7 +75,7 @@ export function DonutChart({
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xl font-extrabold text-sand-900">
-            {hovered !== null ? data[hovered].value : total}
+            {hovered !== null ? data[hovered].value : realTotal}
           </span>
           <span className="text-[10px] font-medium text-sand-400">
             {hovered !== null ? data[hovered].label : "Total Kolas"}
@@ -97,9 +100,7 @@ export function DonutChart({
               />
               {d.label}
             </span>
-            <span className="font-bold text-sand-900">
-              {Math.round((d.value / total) * 100)}%
-            </span>
+            <span className="font-bold text-sand-900">{Math.round((d.value / total) * 100)}%</span>
           </li>
         ))}
       </ul>

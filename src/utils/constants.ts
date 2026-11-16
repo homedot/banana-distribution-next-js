@@ -1,12 +1,11 @@
 import type { PaymentMethod, QualityCategory } from "@/src/types";
 
 export const KAYA_TYPES = [
-  "Nendran",
-  "Robusta",
-  "Poovan",
-  "Rasakadali",
-  "Red Banana",
-  "Elakki",
+  "ഏത്തൻ", // Ethan (Nendran)
+  "ഞാലി", // Njali
+  "റോബസ്റ്റ", // Robusta
+  "ചെറുകായ", // Cherukaya
+  "പൂവൻ", // Poovan
 ] as const;
 
 export const QUALITY_CATEGORIES: QualityCategory[] = [
@@ -25,9 +24,10 @@ export const SERVICE_AREAS = ["Ernakulam", "Thrissur"] as const;
 
 export const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: "grid" },
-  { href: "/distributions", label: "Distributions", icon: "truck" },
+  { href: "/distributions", label: "Sales", icon: "truck" },
+  { href: "/vendors", label: "Vendors", icon: "store" },
+  { href: "/payments", label: "Payment Entry", icon: "wallet" },
   // Hidden from navigation for now — pages remain reachable directly.
   // { href: "/brokers", label: "Brokers", icon: "package" },
-  // { href: "/vendors", label: "Vendors", icon: "store" },
   // { href: "/reports", label: "Reports", icon: "chart" },
 ] as const;

@@ -1,17 +1,17 @@
 import { Suspense } from "react";
-import { DistributionDetailScreen } from "@/src/screens/Distributions/DistributionDetailScreen";
+import { SaleDetailScreen } from "@/src/screens/Sales/SaleDetailScreen";
 
-async function DistributionDetailLoader({
+async function SaleDetailLoader({
   params,
 }: Pick<PageProps<"/distributions/[id]">, "params">) {
   const { id } = await params;
-  return <DistributionDetailScreen id={id} />;
+  return <SaleDetailScreen id={id} />;
 }
 
 export default function Page({ params }: PageProps<"/distributions/[id]">) {
   return (
     <Suspense fallback={null}>
-      <DistributionDetailLoader params={params} />
+      <SaleDetailLoader params={params} />
     </Suspense>
   );
 }

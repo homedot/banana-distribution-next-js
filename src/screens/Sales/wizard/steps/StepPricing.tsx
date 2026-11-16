@@ -3,7 +3,7 @@
 import { calcGrossTotal, calcNetPayable } from "@/src/utils/calculations";
 import { formatCurrency } from "@/src/utils/format";
 import { Input } from "@/src/components/ui/Field";
-import type { WizardState } from "@/src/screens/Distributions/wizard/types";
+import type { WizardState } from "@/src/screens/Sales/wizard/types";
 import type { RateBasis } from "@/src/types";
 
 export function StepPricing({
@@ -58,7 +58,9 @@ export function StepPricing({
       />
 
       <div className="flex items-center justify-between rounded-xl bg-sand-50 px-4 py-3">
-        <span className="text-[13px] font-semibold text-sand-600">Gross Total</span>
+        <span className="text-[13px] font-semibold text-sand-600">
+          Gross Total
+        </span>
         <span className="text-[15px] font-extrabold text-sand-900">
           {formatCurrency(grossTotal)}
         </span>
@@ -77,7 +79,9 @@ export function StepPricing({
       />
 
       <div className="flex items-center justify-between rounded-xl bg-forest-50 px-4 py-3.5">
-        <span className="text-[13px] font-bold text-forest-800">Net Payable Amount</span>
+        <span className="text-[13px] font-bold text-forest-800">
+          Net Payable Amount
+        </span>
         <span className="text-[18px] font-extrabold text-forest-800">
           {formatCurrency(netPayable)}
         </span>

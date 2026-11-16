@@ -10,7 +10,7 @@ backend/services/             business logic + Mongoose queries, throws ApiError
 backend/models/                Mongoose schemas
 backend/config/db.ts           cached MongoDB Atlas connection
 backend/utils/                 shared response/error helpers
-backend/seed/                  one-off script to populate demo data
+backend/seed/                  one-off script to create the admin login
 ```
 
 To add a new resource, copy an existing one (e.g. `vendor`) across those four
@@ -22,25 +22,24 @@ layers and add its `route.ts` files under `app/api/`.
    your MongoDB Atlas cluster's "Connect" dialog) and `JWT_SECRET` (generate
    one with `openssl rand -base64 48`).
 2. `npm install`
-3. `npm run seed` — optional, populates the demo brokers/vendors/batches/distributions.
-4. `npm run seed:admin` — creates/resets the admin login user (safe to re-run; upserts by email).
-5. `npm run dev`
+3. `npm run seed:admin` — creates/resets the admin login user (safe to re-run; upserts by email).
+4. `npm run dev`
 
 ## API
 
 All responses are JSON shaped as `{ success: true, data }` or
 `{ success: false, message }`.
 
-| Resource        | Endpoints                                                              |
-| --------------- | ----------------------------------------------------------------------- |
-| Brokers         | `GET/POST /api/brokers`, `GET/PUT/DELETE /api/brokers/:id`             |
-| Vendors         | `GET/POST /api/vendors`, `GET/PUT/DELETE /api/vendors/:id`             |
-| Batches         | `GET/POST /api/batches`, `GET/PUT/DELETE /api/batches/:id`             |
-| Distributions   | `GET/POST /api/distributions`, `GET/PUT/DELETE /api/distributions/:id` |
-| Auth            | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`    |
+| Resource | Endpoints                                                           |
+| -------- | ------------------------------------------------------------------- |
+| Brokers  | `GET/POST /api/brokers`, `GET/PUT/DELETE /api/brokers/:id`          |
+| Vendors  | `GET/POST /api/vendors`, `GET/PUT/DELETE /api/vendors/:id`          |
+| Batches  | `GET/POST /api/batches`, `GET/PUT/DELETE /api/batches/:id`          |
+| Sales    | `GET/POST /api/distributions`, `GET/PUT/DELETE /api/distributions/:id`              |
+| Auth     | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` |
 
 `Batch` is a broker's inward stock consignment (`BrokerBatch` in
-`src/types`); `Distribution` is a dispatch of stock to a vendor.
+`src/types`); `Sale` is a dispatch of stock to a vendor.
 
 ## Auth
 
@@ -52,7 +51,7 @@ never touches the token directly.
 `proxy.ts` (project root — this Next.js version's renamed `middleware.ts`)
 verifies that cookie on every request: unauthenticated visitors are
 redirected to `/login`; unauthenticated API calls (other than `/api/auth/*`)
-get a 401. This is an *optimistic* check (signature + expiry only, no DB
+get a 401. This is an _optimistic_ check (signature + expiry only, no DB
 hit) — it's not a substitute for checking auth in the services themselves
 if you add anything sensitive.
 

@@ -11,7 +11,10 @@ declare global {
 
 // Cached across hot-reloads in dev and across route handler invocations in
 // prod, so we don't open a new connection to Atlas on every request.
-const cache: MongooseCache = global.mongooseCache ?? { conn: null, promise: null };
+const cache: MongooseCache = global.mongooseCache ?? {
+  conn: null,
+  promise: null,
+};
 global.mongooseCache = cache;
 
 export async function connectDB(): Promise<typeof mongoose> {
@@ -20,7 +23,7 @@ export async function connectDB(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     throw new Error(
-      "Missing MONGODB_URI environment variable. Add it to .env.local (see .env.example)."
+      "Missing MONGODB_URI environment variable. Add it to .env.local (see .env.example).",
     );
   }
 

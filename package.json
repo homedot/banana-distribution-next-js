@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx backend/seed/seed.ts",
     "seed:admin": "tsx backend/seed/seed-admin.ts"
   },
   "dependencies": {

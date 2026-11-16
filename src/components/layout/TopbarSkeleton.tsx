@@ -12,13 +12,14 @@ export function TopbarSkeleton() {
           <h1 className="text-[18px] font-extrabold leading-tight text-sand-900">
             St. Mary&apos;s
           </h1>
-          <p className="text-[12.5px] text-sand-500">Banana Distribution</p>
+          <p className="text-[12.5px] text-sand-500">Banana Sale</p>
         </div>
       </div>
       <div className="flex items-center gap-2.5">
         <div className="hidden h-10 w-[168px] rounded-xl bg-banana-500/60 sm:block" />
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest-800 text-[12px] font-bold text-white">
-          SM
+        <div className="flex h-11 items-center gap-2 rounded-xl border-2 border-red-200 bg-white px-3.5 text-[14px] font-bold text-red-700">
+          <Icon.LogOut className="h-5 w-5" />
+          Logout
         </div>
       </div>
     </header>

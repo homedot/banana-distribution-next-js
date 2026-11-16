@@ -22,8 +22,8 @@ export function BrokersListScreen() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-[13px] text-sand-500">
-          {summaries.length} broker{summaries.length === 1 ? "" : "s"} · inward stock &amp;
-          vendor dispatch in one place
+          {summaries.length} broker{summaries.length === 1 ? "" : "s"} · inward
+          stock &amp; vendor dispatch in one place
         </p>
         <Button onClick={() => setOpen(true)}>
           <Icon.Plus className="h-4 w-4" /> Record Inward Stock
@@ -69,7 +69,8 @@ export function BrokersListScreen() {
                             {s.broker.name}
                           </p>
                           <p className="text-[12px] text-sand-500">
-                            {s.broker.location} · {s.batches[0]?.batch.kayaType ?? "—"}
+                            {s.broker.location} ·{" "}
+                            {s.batches[0]?.batch.kayaType ?? "—"}
                           </p>
                         </div>
                       </div>
@@ -91,13 +92,17 @@ export function BrokersListScreen() {
                         <p className="text-[14px] font-extrabold text-sand-900">
                           {formatNumber(s.dispatchedKolas)}
                         </p>
-                        <p className="text-[10.5px] font-medium text-sand-400">Dispatched</p>
+                        <p className="text-[10.5px] font-medium text-sand-400">
+                          Dispatched
+                        </p>
                       </div>
                       <div className="rounded-xl bg-sand-50 py-2.5">
                         <p className="text-[14px] font-extrabold text-sand-900">
                           {formatNumber(s.remainingKolas)}
                         </p>
-                        <p className="text-[10.5px] font-medium text-sand-400">Remaining</p>
+                        <p className="text-[10.5px] font-medium text-sand-400">
+                          Remaining
+                        </p>
                       </div>
                     </div>
 
@@ -107,19 +112,27 @@ export function BrokersListScreen() {
 
                     <div className="mt-4 flex items-center justify-between">
                       <div>
-                        <p className="text-[11px] font-medium text-sand-400">Collected</p>
+                        <p className="text-[11px] font-medium text-sand-400">
+                          Collected
+                        </p>
                         <p className="text-[14px] font-bold text-emerald-700">
                           {formatCurrency(s.totalCollected)}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[11px] font-medium text-sand-400">Pending</p>
+                        <p className="text-[11px] font-medium text-sand-400">
+                          Pending
+                        </p>
                         <p className="text-[14px] font-bold text-red-600">
                           {formatCurrency(s.totalPending)}
                         </p>
                       </div>
                     </div>
-                    <ProgressBar className="mt-2" value={collectionPct} tone="forest" />
+                    <ProgressBar
+                      className="mt-2"
+                      value={collectionPct}
+                      tone="forest"
+                    />
                   </CardBody>
                 </Card>
               </Link>

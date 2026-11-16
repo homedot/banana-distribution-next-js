@@ -1,4 +1,4 @@
-import type { Broker, BrokerBatch, Distribution, Vendor } from "@/src/types";
+import type { Broker, BrokerBatch, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
 
 interface ApiSuccess<T> {
   success: true;
@@ -29,31 +29,50 @@ export const api = {
   brokers: {
     list: () => request<Broker[]>("/api/brokers"),
     create: (input: Omit<Broker, "id" | "createdAt">) =>
-      request<Broker>("/api/brokers", { method: "POST", body: JSON.stringify(input) }),
+      request<Broker>("/api/brokers", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
   },
   vendors: {
     list: () => request<Vendor[]>("/api/vendors"),
     create: (input: Omit<Vendor, "id" | "createdAt">) =>
-      request<Vendor>("/api/vendors", { method: "POST", body: JSON.stringify(input) }),
+      request<Vendor>("/api/vendors", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
   },
   batches: {
     list: () => request<BrokerBatch[]>("/api/batches"),
     create: (input: Omit<BrokerBatch, "id">) =>
-      request<BrokerBatch>("/api/batches", { method: "POST", body: JSON.stringify(input) }),
-  },
-  distributions: {
-    list: () => request<Distribution[]>("/api/distributions"),
-    create: (input: Omit<Distribution, "id" | "createdAt" | "updatedAt">) =>
-      request<Distribution>("/api/distributions", {
+      request<BrokerBatch>("/api/batches", {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    update: (id: string, input: Omit<Distribution, "id" | "createdAt" | "updatedAt">) =>
-      request<Distribution>(`/api/distributions/${id}`, {
+  },
+  sales: {
+    list: () => request<Sale[]>("/api/distributions"),
+    create: (input: Omit<Sale, "id" | "createdAt" | "updatedAt">) =>
+      request<Sale>("/api/distributions", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    update: (id: string, input: Omit<Sale, "id" | "createdAt" | "updatedAt">) =>
+      request<Sale>(`/api/distributions/${id}`, {
         method: "PUT",
         body: JSON.stringify(input),
       }),
     remove: (id: string) =>
       request<{ id: string }>(`/api/distributions/${id}`, { method: "DELETE" }),
+  },
+  payments: {
+    list: () => request<Payment[]>("/api/payments"),
+    create: (input: PaymentInput) =>
+      request<{ payment: Payment; sales: Sale[] }>("/api/payments", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    remove: (id: string) =>
+      request<{ id: string; sales: Sale[] }>(`/api/payments/${id}`, { method: "DELETE" }),
   },
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppData } from "@/src/store/data-context";
@@ -15,14 +15,18 @@ import { Button } from "@/src/components/ui/Button";
 import { Card, CardBody } from "@/src/components/ui/Card";
 import { Icon } from "@/src/components/icons";
 import {
+  ACCOUNT_NUMBER_PATTERN,
   emptyWizardState,
-  wizardStateFromDistribution,
+  IFSC_PATTERN,
+  paymentDetailsForMethod,
+  UPI_ID_PATTERN,
+  wizardStateFromSale,
   type WizardState,
-} from "@/src/screens/Distributions/wizard/types";
-import { StepVendorStock } from "@/src/screens/Distributions/wizard/steps/StepVendorStock";
-import { StepQuantity } from "@/src/screens/Distributions/wizard/steps/StepQuantity";
-import { StepPricing } from "@/src/screens/Distributions/wizard/steps/StepPricing";
-import { StepPayment } from "@/src/screens/Distributions/wizard/steps/StepPayment";
+} from "@/src/screens/Sales/wizard/types";
+import { StepVendorKaya } from "@/src/screens/Sales/wizard/steps/StepVendorKaya";
+import { StepQuantity } from "@/src/screens/Sales/wizard/steps/StepQuantity";
+import { StepPricing } from "@/src/screens/Sales/wizard/steps/StepPricing";
+import { StepPayment } from "@/src/screens/Sales/wizard/steps/StepPayment";
 
 function todayISO() {
   const d = new Date();
@@ -32,8 +36,8 @@ function todayISO() {
 
 const SECTIONS = [
   {
-    title: "Vendor & Stock",
-    description: "Who this dispatch is for, and which batch it draws from.",
+    title: "Vendor & Kaya Types",
+    description: "Who this sale is for, and which kaya types.",
   },
   {
     title: "Quantity & Quality",
@@ -49,17 +53,16 @@ const SECTIONS = [
   },
 ] as const;
 
-function validateStep(index: number, state: WizardState, remaining: number): string | null {
+function validateStep(index: number, state: WizardState): string | null {
   switch (index) {
     case 0:
       if (!state.vendorId) return "Select a vendor to continue";
-      if (!state.batchId) return "Select a stock source to continue";
+      if (state.kayaTypes.length === 0) return "Select at least one kaya type to continue";
       return null;
     case 1: {
       const qty = Number(state.kolaQuantity) || 0;
       const weight = Number(state.totalWeight) || 0;
       if (qty <= 0) return "Enter the kola quantity";
-      if (qty > remaining) return "Kola quantity exceeds remaining stock";
       if (weight <= 0) return "Enter the total weight";
       return null;
     }
@@ -71,6 +74,26 @@ function validateStep(index: number, state: WizardState, remaining: number): str
     case 3: {
       const collected = Number(state.amountCollected) || 0;
       if (collected < 0) return "Amount collected cannot be negative";
+      const d = state.paymentDetails;
+      if (state.paymentMethod === "upi") {
+        const upiId = d.upiId.trim();
+        if (collected > 0 && !upiId)
+          return "Enter the UPI ID the payment came from";
+        if (upiId && !UPI_ID_PATTERN.test(upiId))
+          return "Enter a valid UPI ID (e.g. name@okaxis)";
+      }
+      if (state.paymentMethod === "bank_transfer") {
+        if (collected > 0 && !d.bankName.trim())
+          return "Enter the bank name for the transfer";
+        if (collected > 0 && !d.bankReference.trim())
+          return "Enter the UTR / reference number for the transfer";
+        const acc = d.accountNumber.replace(/\s+/g, "");
+        if (acc && !ACCOUNT_NUMBER_PATTERN.test(acc))
+          return "Account number should be 9–18 digits";
+        const ifsc = d.ifscCode.trim().toUpperCase();
+        if (ifsc && !IFSC_PATTERN.test(ifsc))
+          return "Enter a valid IFSC code (e.g. SBIN0001234)";
+      }
       return null;
     }
     default:
@@ -96,7 +119,7 @@ function SectionHeader({
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold",
           status === "ok" && "bg-forest-100 text-forest-700",
           status === "error" && "bg-red-100 text-red-700",
-          status === "neutral" && "bg-sand-100 text-sand-500"
+          status === "neutral" && "bg-sand-100 text-sand-500",
         )}
       >
         {status === "ok" ? (
@@ -115,34 +138,19 @@ function SectionHeader({
   );
 }
 
-export function CreateDistributionScreen({
-  distributionId,
-}: {
-  distributionId?: string;
-}) {
+export function CreateSaleScreen({ saleId }: { saleId?: string }) {
   const router = useRouter();
-  const { data, addDistribution, updateDistribution } = useAppData();
-  const existing = distributionId
-    ? data.distributions.find((d) => d.id === distributionId)
-    : undefined;
+  const { data, addSale, updateSale } = useAppData();
+  const existing = saleId ? data.sales.find((d) => d.id === saleId) : undefined;
 
   const [state, setState] = useState<WizardState>(() =>
-    existing ? wizardStateFromDistribution(existing) : emptyWizardState
+    existing ? wizardStateFromSale(existing) : emptyWizardState,
   );
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  const batch = data.batches.find((b) => b.id === state.batchId);
-  const remaining = useMemo(() => {
-    if (!batch) return 0;
-    const dispatched = data.distributions
-      .filter((d) => d.batchId === batch.id && d.id !== existing?.id)
-      .reduce((s, d) => s + d.kolaQuantity, 0);
-    return Math.max(0, batch.inwardQtyKolas - dispatched);
-  }, [batch, data.distributions, existing?.id]);
-
-  const sectionErrors = [0, 1, 2, 3].map((i) => validateStep(i, state, remaining));
+  const sectionErrors = [0, 1, 2, 3].map((i) => validateStep(i, state));
 
   function sectionStatus(i: number): "ok" | "error" | "neutral" {
     if (!sectionErrors[i]) return "ok";
@@ -181,8 +189,9 @@ export function CreateDistributionScreen({
 
     const payload = {
       vendorId: state.vendorId,
-      batchId: state.batchId,
-      kayaType: state.kayaType,
+      batchId: state.batchId || null,
+      kayaTypes: state.kayaTypes,
+      kayaType: state.kayaTypes.join(", "),
       qualityCategory: state.qualityCategory,
       kolaQuantity: kolas,
       totalWeight: weight,
@@ -194,6 +203,10 @@ export function CreateDistributionScreen({
       netPayable,
       amountCollected: collected,
       paymentMethod: state.paymentMethod,
+      paymentDetails: paymentDetailsForMethod(
+        state.paymentMethod,
+        state.paymentDetails,
+      ),
       balanceDue,
       customFields: state.customFields.filter((f) => f.label.trim()),
       notes: state.notes,
@@ -202,14 +215,14 @@ export function CreateDistributionScreen({
 
     try {
       if (existing) {
-        await updateDistribution(existing.id, payload);
+        await updateSale(existing.id, payload);
         router.push(`/distributions/${existing.id}`);
       } else {
-        const created = await addDistribution(payload);
+        const created = await addSale(payload);
         router.push(`/distributions/${created.id}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save distribution");
+      setError(err instanceof Error ? err.message : "Failed to save Sale");
     }
   }
 
@@ -220,12 +233,12 @@ export function CreateDistributionScreen({
         className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sand-500 hover:text-sand-800"
       >
         <Icon.ArrowLeft className="h-4 w-4" />
-        {existing ? "Back to distribution" : "Back to distributions"}
+        {existing ? "Back to Sale" : "Back to Sales"}
       </Link>
 
       <div>
         <h1 className="text-[20px] font-extrabold text-sand-900">
-          {existing ? "Edit Distribution" : "New Distribution"}
+          {existing ? "Edit Sale" : "New Sale"}
         </h1>
         <p className="text-[13px] text-sand-500">
           Everything is on this one screen — fill it in, in any order.
@@ -233,7 +246,12 @@ export function CreateDistributionScreen({
       </div>
 
       {SECTIONS.map((section, i) => (
-        <div key={section.title} ref={(el) => { sectionRefs.current[i] = el; }}>
+        <div
+          key={section.title}
+          ref={(el) => {
+            sectionRefs.current[i] = el;
+          }}
+        >
           <Card>
             <CardBody className="space-y-5">
               <SectionHeader
@@ -243,19 +261,13 @@ export function CreateDistributionScreen({
                 status={sectionStatus(i)}
               />
               {i === 0 && (
-                <StepVendorStock
+                <StepVendorKaya
                   state={state}
                   update={update}
-                  editingBatchId={existing?.batchId}
+                  showErrors={attempted}
                 />
               )}
-              {i === 1 && (
-                <StepQuantity
-                  state={state}
-                  update={update}
-                  originalKolaQuantity={existing?.kolaQuantity}
-                />
-              )}
+              {i === 1 && <StepQuantity state={state} update={update} />}
               {i === 2 && <StepPricing state={state} update={update} />}
               {i === 3 && <StepPayment state={state} update={update} />}
             </CardBody>
@@ -289,16 +301,18 @@ export function CreateDistributionScreen({
                 <p
                   className={cn(
                     "text-[17px] font-extrabold",
-                    balanceDue > 0 ? "text-red-700" : "text-emerald-700"
+                    balanceDue > 0 ? "text-red-700" : "text-emerald-700",
                   )}
                 >
-                  {balanceDue > 0 ? formatCurrency(balanceDue) : "Fully Settled"}
+                  {balanceDue > 0
+                    ? formatCurrency(balanceDue)
+                    : "Fully Settled"}
                 </p>
               </div>
             </div>
             <Button size="lg" onClick={handleSave}>
               <Icon.Check className="h-4 w-4" />
-              {existing ? "Save Changes" : "Save Distribution"}
+              {existing ? "Save Changes" : "Save Sale"}
             </Button>
           </CardBody>
         </Card>

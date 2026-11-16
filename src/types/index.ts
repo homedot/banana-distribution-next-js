@@ -44,11 +44,26 @@ export interface CustomField {
   value: string;
 }
 
-export interface Distribution {
+/** Extra details for non-cash payments. Only the selected method's fields are filled. */
+export interface PaymentDetails {
+  upiId: string;
+  upiTransactionId: string;
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  ifscCode: string;
+  bankReference: string;
+}
+
+export interface Sale {
   id: string;
   vendorId: string;
-  batchId: string;
+  /** Stock batch — only on sales created before batches were removed from New Sale. */
+  batchId?: string | null;
+  /** Display label — all kaya types joined with ", ". */
   kayaType: string;
+  /** Every kaya type in the sale. Missing/empty on older single-type sales. */
+  kayaTypes?: string[];
   qualityCategory: QualityCategory;
   kolaQuantity: number;
   totalWeight: number;
@@ -60,6 +75,8 @@ export interface Distribution {
   netPayable: number;
   amountCollected: number;
   paymentMethod: PaymentMethod;
+  /** Missing on sales saved before this field existed. */
+  paymentDetails?: PaymentDetails;
   balanceDue: number;
   customFields: CustomField[];
   notes: string;
@@ -68,9 +85,29 @@ export interface Distribution {
   updatedAt: string;
 }
 
+export interface PaymentAllocation {
+  saleId: string;
+  amount: number;
+}
+
+export interface Payment {
+  id: string;
+  vendorId: string;
+  amount: number;
+  method: PaymentMethod;
+  date: string;
+  reference: string;
+  notes: string;
+  allocations: PaymentAllocation[];
+  createdAt: string;
+}
+
+export type PaymentInput = Pick<Payment, "vendorId" | "amount" | "method" | "date" | "reference" | "notes">;
+
 export interface AppData {
   brokers: Broker[];
   batches: BrokerBatch[];
   vendors: Vendor[];
-  distributions: Distribution[];
+  sales: Sale[];
+  payments: Payment[];
 }

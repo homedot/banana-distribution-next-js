@@ -1,19 +1,50 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useAppData } from "@/src/store/data-context";
-import { getVendorSummary, groupDistributionsByDay } from "@/src/store/selectors";
+import { getVendorSummary, groupSalesByDay } from "@/src/store/selectors";
 import { formatCurrency, formatDate, formatNumber } from "@/src/utils/format";
-import { Card, CardBody, CardHeader, CardTitle } from "@/src/components/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { Icon } from "@/src/components/icons";
 import { Button } from "@/src/components/ui/Button";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PaymentStatusBadge } from "@/src/components/domain/PaymentStatusBadge";
+import { DateRangeFilter } from "@/src/components/domain/DateRangeFilter";
+import {
+  ALL_TIME,
+  inRange,
+  isAllTime,
+  rangePhrase,
+  toDayKey,
+  type PeriodRange,
+} from "@/src/utils/period";
 
-export function VendorDetailScreen({ id }: { id: string }) {
+export function VendorDetailScreen({
+  id,
+  initialRange = ALL_TIME,
+}: {
+  id: string;
+  initialRange?: PeriodRange;
+}) {
   const { data } = useAppData();
+  const [range, setRange] = useState<PeriodRange>(initialRange);
+  const filtered = !isAllTime(range);
+  const phrase = rangePhrase(range);
+
+  // Overall figures (for the "pending" badge — what the vendor owes right now).
   const summary = getVendorSummary(data, id);
+  // Figures for the selected From → To dates only.
+  const periodSummary = getVendorSummary(
+    { ...data, sales: data.sales.filter((d) => inRange(toDayKey(d.date), range)) },
+    id,
+  );
 
   if (!summary) {
     return (
@@ -29,8 +60,10 @@ export function VendorDetailScreen({ id }: { id: string }) {
     );
   }
 
-  const { vendor, distributions, totalKolas, totalNetPayable, totalCollected, totalPending } = summary;
-  const grouped = groupDistributionsByDay(distributions);
+  const { vendor, totalPending: overallPending } = summary;
+  const { sales, totalKolas, totalNetPayable, totalCollected, totalPending } =
+    periodSummary ?? summary;
+  const grouped = groupSalesByDay(sales);
 
   return (
     <div className="space-y-5">
@@ -47,7 +80,9 @@ export function VendorDetailScreen({ id }: { id: string }) {
             {vendor.name.slice(0, 2).toUpperCase()}
           </span>
           <div>
-            <h2 className="text-[20px] font-extrabold text-sand-900">{vendor.name}</h2>
+            <h2 className="text-[20px] font-extrabold text-sand-900">
+              {vendor.name}
+            </h2>
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-sand-500">
               <span className="flex items-center gap-1.5">
                 <Icon.MapPin className="h-3.5 w-3.5" /> {vendor.location}
@@ -65,60 +100,63 @@ export function VendorDetailScreen({ id }: { id: string }) {
             </p>
           </div>
         </div>
-        <Badge tone={totalPending > 0 ? "danger" : "success"}>
-          {totalPending > 0 ? `${formatCurrency(totalPending)} pending` : "Fully settled"}
+        <Badge tone={overallPending > 0 ? "danger" : "success"}>
+          {overallPending > 0
+            ? `${formatCurrency(overallPending)} pending in total`
+            : "Fully settled"}
         </Badge>
       </div>
 
+      <DateRangeFilter value={range} onApply={setRange} />
+
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card>
-          <CardBody className="text-center">
-            <p className="text-[18px] font-extrabold text-sand-900">{formatNumber(totalKolas)}</p>
-            <p className="text-[11px] font-medium text-sand-400">Total Kolas</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center">
-            <p className="text-[18px] font-extrabold text-sand-900">
-              {formatCurrency(totalNetPayable)}
-            </p>
-            <p className="text-[11px] font-medium text-sand-400">Net Payable</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center">
-            <p className="text-[18px] font-extrabold text-emerald-700">
-              {formatCurrency(totalCollected)}
-            </p>
-            <p className="text-[11px] font-medium text-sand-400">Collected</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center">
-            <p className="text-[18px] font-extrabold text-red-600">
-              {formatCurrency(totalPending)}
-            </p>
-            <p className="text-[11px] font-medium text-sand-400">Pending</p>
-          </CardBody>
-        </Card>
+        {[
+          { label: "Kolas", value: formatNumber(totalKolas), tone: "text-sand-900" },
+          { label: "Billed", value: formatCurrency(totalNetPayable), tone: "text-sand-900" },
+          { label: "Collected", value: formatCurrency(totalCollected), tone: "text-emerald-700" },
+          { label: "Pending", value: formatCurrency(totalPending), tone: "text-red-600" },
+        ].map((c) => (
+          <Card key={c.label}>
+            <CardBody className="text-center">
+              <p className={`text-[22px] font-extrabold ${c.tone}`}>{c.value}</p>
+              <p className="mt-0.5 text-[14px] font-semibold text-sand-500">
+                {c.label} {filtered ? phrase : ""}
+              </p>
+            </CardBody>
+          </Card>
+        ))}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Daily Transaction Log</CardTitle>
+          <div>
+            <CardTitle>Daily Transaction Log</CardTitle>
+            {filtered && (
+              <p className="mt-0.5 text-[12px] text-sand-500">
+                {sales.length} {sales.length === 1 ? "sale" : "sales"} {phrase}
+              </p>
+            )}
+          </div>
         </CardHeader>
         <CardBody className="pt-2">
           {grouped.length === 0 ? (
             <EmptyState
               icon={<Icon.Truck className="h-6 w-6" />}
-              title="No dispatches yet"
-              description="Transactions with this vendor will appear here, grouped by day."
+              title={filtered ? `No sales ${phrase}` : "No dispatches yet"}
+              description={
+                filtered
+                  ? "This vendor had no sales in this period. Try other dates, or press Clear to see all."
+                  : "Transactions with this vendor will appear here, grouped by day."
+              }
             />
           ) : (
             <div className="space-y-6">
-              {grouped.map(({ date, distributions: dayItems }) => {
+              {grouped.map(({ date, sales: dayItems }) => {
                 const dayTotal = dayItems.reduce((s, d) => s + d.netPayable, 0);
-                const dayPending = dayItems.reduce((s, d) => s + d.balanceDue, 0);
+                const dayPending = dayItems.reduce(
+                  (s, d) => s + d.balanceDue,
+                  0,
+                );
                 return (
                   <div key={date}>
                     <div className="mb-2 flex items-center justify-between">
@@ -143,17 +181,19 @@ export function VendorDetailScreen({ id }: { id: string }) {
                           >
                             <div>
                               <p className="text-[13px] font-semibold text-sand-900">
-                                {d.kayaType} · {formatNumber(d.kolaQuantity)} kolas
+                                {d.kayaType} · {formatNumber(d.kolaQuantity)}{" "}
+                                kolas
                               </p>
                               <p className="text-[11.5px] text-sand-500">
-                                {formatNumber(d.totalWeight)} kg · {d.qualityCategory}
+                                {formatNumber(d.totalWeight)} kg ·{" "}
+                                {d.qualityCategory}
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="text-[13px] font-bold text-sand-900">
                                 {formatCurrency(d.netPayable)}
                               </span>
-                              <PaymentStatusBadge distribution={d} />
+                              <PaymentStatusBadge sale={d} />
                             </div>
                           </Link>
                         </li>

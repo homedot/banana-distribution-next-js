@@ -1,5 +1,5 @@
-import { CreateDistributionScreen } from "@/src/screens/Distributions/wizard/CreateDistributionScreen";
+import { CreateSaleScreen } from "@/src/screens/Sales/wizard/CreateSaleScreen";
 
 export default function Page() {
-  return <CreateDistributionScreen />;
+  return <CreateSaleScreen />;
 }

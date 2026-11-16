@@ -4,10 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAppData } from "@/src/store/data-context";
-import { distributionRefs } from "@/src/store/selectors";
-import { formatCurrency, formatDate, formatNumber, initials } from "@/src/utils/format";
+import { saleRefs } from "@/src/store/selectors";
+import {
+  formatCurrency,
+  formatDate,
+  formatNumber,
+  initials,
+} from "@/src/utils/format";
 import { PAYMENT_METHODS } from "@/src/utils/constants";
-import { Card, CardBody, CardHeader, CardTitle } from "@/src/components/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
 import { Icon } from "@/src/components/icons";
@@ -16,7 +26,13 @@ import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { PaymentStatusBadge } from "@/src/components/domain/PaymentStatusBadge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between border-b border-sand-100 py-2.5 last:border-0">
       <span className="text-[13px] text-sand-500">{label}</span>
@@ -25,44 +41,44 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-export function DistributionDetailScreen({ id }: { id: string }) {
+export function SaleDetailScreen({ id }: { id: string }) {
   const router = useRouter();
-  const { data, deleteDistribution } = useAppData();
+  const { data, deleteSale } = useAppData();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const distribution = data.distributions.find((d) => d.id === id);
+  const sale = data.sales.find((d) => d.id === id);
 
-  if (!distribution) {
+  if (!sale) {
     return (
       <EmptyState
         icon={<Icon.AlertCircle className="h-6 w-6" />}
-        title="Distribution not found"
+        title="Sale not found"
         description="It may have been removed."
         action={
           <Link href="/distributions">
-            <Button size="sm">Back to Distributions</Button>
+            <Button size="sm">Back to Sales</Button>
           </Link>
         }
       />
     );
   }
 
-  const { vendor, batch, broker } = distributionRefs(data, distribution);
+  const { vendor, batch, broker } = saleRefs(data, sale);
   const methodLabel = PAYMENT_METHODS.find(
-    (m) => m.value === distribution.paymentMethod
+    (m) => m.value === sale.paymentMethod,
   )?.label;
   const collectionPct =
-    distribution.netPayable > 0
-      ? (distribution.amountCollected / distribution.netPayable) * 100
-      : 100;
+    sale.netPayable > 0 ? (sale.amountCollected / sale.netPayable) * 100 : 100;
 
   async function handleDelete() {
     try {
-      await deleteDistribution(distribution!.id);
+      await deleteSale(sale!.id);
       router.push("/distributions");
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Failed to delete distribution");
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete Sale",
+      );
     }
   }
 
@@ -74,7 +90,7 @@ export function DistributionDetailScreen({ id }: { id: string }) {
             href="/distributions"
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sand-500 hover:text-sand-800"
           >
-            <Icon.ArrowLeft className="h-4 w-4" /> Back to distributions
+            <Icon.ArrowLeft className="h-4 w-4" /> Back to Sales
           </Link>
           <div className="mt-2.5 flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest-100 text-[13px] font-bold text-forest-700">
@@ -85,15 +101,15 @@ export function DistributionDetailScreen({ id }: { id: string }) {
                 {vendor?.name ?? "Unknown vendor"}
               </h2>
               <p className="text-[12.5px] text-sand-500">
-                {distribution.kayaType} · {formatDate(distribution.date)}
+                {sale.kayaType} · {formatDate(sale.date)}
               </p>
             </div>
-            <PaymentStatusBadge distribution={distribution} />
+            <PaymentStatusBadge sale={sale} />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href={`/distributions/${distribution.id}/edit`}>
+          <Link href={`/distributions/${sale.id}/edit`}>
             <Button variant="secondary">
               <Icon.Edit className="h-4 w-4" /> Edit
             </Button>
@@ -109,52 +125,67 @@ export function DistributionDetailScreen({ id }: { id: string }) {
           <Card>
             <CardHeader>
               <CardTitle>Dispatch Details</CardTitle>
-              <Badge tone="banana">{distribution.qualityCategory}</Badge>
+              <Badge tone="banana">{sale.qualityCategory}</Badge>
             </CardHeader>
             <CardBody className="pt-2">
-              <DetailRow label="Shopkeeper / Vendor" value={vendor?.name ?? "—"} />
               <DetailRow
-                label="Stock Source (Broker Batch)"
-                value={`${broker?.name ?? "—"} (${broker?.location ?? "—"})`}
+                label="Shopkeeper / Vendor"
+                value={vendor?.name ?? "—"}
               />
-              <DetailRow label="Kaya Type" value={distribution.kayaType} />
-              <DetailRow label="Quality Category" value={distribution.qualityCategory} />
+              {broker && (
+                <DetailRow
+                  label="Stock Source (Broker Batch)"
+                  value={`${broker.name} (${broker.location})`}
+                />
+              )}
+              <DetailRow
+                label={(sale.kayaTypes?.length ?? 1) > 1 ? "Kaya Types" : "Kaya Type"}
+                value={sale.kayaType}
+              />
+              <DetailRow
+                label="Quality Category"
+                value={sale.qualityCategory}
+              />
               <DetailRow
                 label="Kola Quantity"
-                value={`${formatNumber(distribution.kolaQuantity)} kolas`}
+                value={`${formatNumber(sale.kolaQuantity)} kolas`}
               />
               <DetailRow
                 label="Total Weight"
-                value={`${formatNumber(distribution.totalWeight)} kg`}
+                value={`${formatNumber(sale.totalWeight)} kg`}
               />
               <DetailRow
                 label="Thandu Count"
-                value={formatNumber(distribution.thanduCount)}
+                value={formatNumber(sale.thanduCount)}
               />
             </CardBody>
           </Card>
 
-          {distribution.customFields.length > 0 && (
+          {sale.customFields.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Additional Details</CardTitle>
               </CardHeader>
               <CardBody className="pt-2">
-                {distribution.customFields.map((field) => (
-                  <DetailRow key={field.id} label={field.label} value={field.value || "—"} />
+                {sale.customFields.map((field) => (
+                  <DetailRow
+                    key={field.id}
+                    label={field.label}
+                    value={field.value || "—"}
+                  />
                 ))}
               </CardBody>
             </Card>
           )}
 
-          {distribution.notes && (
+          {sale.notes && (
             <Card>
               <CardHeader>
                 <CardTitle>Notes</CardTitle>
               </CardHeader>
               <CardBody className="pt-2">
                 <p className="text-[13.5px] leading-relaxed text-sand-700">
-                  {distribution.notes}
+                  {sale.notes}
                 </p>
               </CardBody>
             </Card>
@@ -169,21 +200,78 @@ export function DistributionDetailScreen({ id }: { id: string }) {
             <CardBody className="pt-2">
               <DetailRow
                 label="Daily Selling Rate"
-                value={`${formatCurrency(distribution.dailySellingRate)} ${
-                  distribution.rateBasis === "per_kola" ? "/ kola" : "/ kg"
+                value={`${formatCurrency(sale.dailySellingRate)} ${
+                  sale.rateBasis === "per_kola" ? "/ kola" : "/ kg"
                 }`}
               />
-              <DetailRow label="Gross Total" value={formatCurrency(distribution.grossTotal)} />
+              <DetailRow
+                label="Gross Total"
+                value={formatCurrency(sale.grossTotal)}
+              />
               <DetailRow
                 label="Discount / Allowance"
-                value={formatCurrency(distribution.discount)}
+                value={formatCurrency(sale.discount)}
               />
-              <DetailRow label="Net Payable" value={formatCurrency(distribution.netPayable)} />
+              <DetailRow
+                label="Net Payable"
+                value={formatCurrency(sale.netPayable)}
+              />
               <DetailRow label="Payment Method" value={methodLabel} />
+              {sale.paymentMethod === "upi" && sale.paymentDetails && (
+                <>
+                  {sale.paymentDetails.upiId && (
+                    <DetailRow
+                      label="UPI ID"
+                      value={sale.paymentDetails.upiId}
+                    />
+                  )}
+                  {sale.paymentDetails.upiTransactionId && (
+                    <DetailRow
+                      label="UPI Transaction ID"
+                      value={sale.paymentDetails.upiTransactionId}
+                    />
+                  )}
+                </>
+              )}
+              {sale.paymentMethod === "bank_transfer" &&
+                sale.paymentDetails && (
+                  <>
+                    {sale.paymentDetails.bankName && (
+                      <DetailRow
+                        label="Bank"
+                        value={sale.paymentDetails.bankName}
+                      />
+                    )}
+                    {sale.paymentDetails.accountHolderName && (
+                      <DetailRow
+                        label="Account Holder"
+                        value={sale.paymentDetails.accountHolderName}
+                      />
+                    )}
+                    {sale.paymentDetails.accountNumber && (
+                      <DetailRow
+                        label="Account No."
+                        value={sale.paymentDetails.accountNumber}
+                      />
+                    )}
+                    {sale.paymentDetails.ifscCode && (
+                      <DetailRow
+                        label="IFSC"
+                        value={sale.paymentDetails.ifscCode}
+                      />
+                    )}
+                    {sale.paymentDetails.bankReference && (
+                      <DetailRow
+                        label="UTR / Reference"
+                        value={sale.paymentDetails.bankReference}
+                      />
+                    )}
+                  </>
+                )}
 
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between text-[12px] font-semibold text-sand-500">
-                  <span>Collected {formatCurrency(distribution.amountCollected)}</span>
+                  <span>Collected {formatCurrency(sale.amountCollected)}</span>
                   <span>{Math.round(collectionPct)}%</span>
                 </div>
                 <ProgressBar value={collectionPct} tone="forest" />
@@ -191,38 +279,41 @@ export function DistributionDetailScreen({ id }: { id: string }) {
 
               <div
                 className={`mt-4 flex items-center justify-between rounded-xl px-3.5 py-3 ${
-                  distribution.balanceDue > 0 ? "bg-red-50" : "bg-emerald-50"
+                  sale.balanceDue > 0 ? "bg-red-50" : "bg-emerald-50"
                 }`}
               >
                 <span
                   className={`text-[12.5px] font-bold ${
-                    distribution.balanceDue > 0 ? "text-red-700" : "text-emerald-700"
+                    sale.balanceDue > 0 ? "text-red-700" : "text-emerald-700"
                   }`}
                 >
-                  {distribution.balanceDue > 0 ? "Balance Due" : "Fully Settled"}
+                  {sale.balanceDue > 0 ? "Balance Due" : "Fully Settled"}
                 </span>
                 <span
                   className={`text-[16px] font-extrabold ${
-                    distribution.balanceDue > 0 ? "text-red-700" : "text-emerald-700"
+                    sale.balanceDue > 0 ? "text-red-700" : "text-emerald-700"
                   }`}
                 >
-                  {formatCurrency(distribution.balanceDue)}
+                  {formatCurrency(sale.balanceDue)}
                 </span>
               </div>
             </CardBody>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Broker &amp; Batch</CardTitle>
-            </CardHeader>
-            <CardBody className="pt-2">
-              {broker && batch ? (
+          {broker && batch && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Broker &amp; Batch</CardTitle>
+              </CardHeader>
+              <CardBody className="pt-2">
                 <>
                   <DetailRow label="Broker" value={broker.name} />
                   <DetailRow label="Location" value={broker.location} />
                   <DetailRow label="Vehicle No." value={broker.vehicleNumber} />
-                  <DetailRow label="Batch Date" value={formatDate(batch.date)} />
+                  <DetailRow
+                    label="Batch Date"
+                    value={formatDate(batch.date)}
+                  />
                   <Link
                     href={`/brokers/${broker.id}`}
                     className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-sand-200 py-2 text-[12.5px] font-semibold text-forest-700 hover:bg-forest-50"
@@ -230,11 +321,9 @@ export function DistributionDetailScreen({ id }: { id: string }) {
                     View broker <Icon.ChevronRight className="h-3.5 w-3.5" />
                   </Link>
                 </>
-              ) : (
-                <p className="text-[13px] text-sand-400">Batch information unavailable</p>
-              )}
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          )}
 
           {vendor && (
             <Card>
@@ -242,14 +331,18 @@ export function DistributionDetailScreen({ id }: { id: string }) {
                 <CardTitle>Vendor Contact</CardTitle>
               </CardHeader>
               <CardBody className="pt-2">
-                <DetailRow label="Contact Person" value={vendor.contactPerson || "—"} />
+                <DetailRow
+                  label="Contact Person"
+                  value={vendor.contactPerson || "—"}
+                />
                 <DetailRow label="Phone" value={vendor.phone || "—"} />
                 <DetailRow label="Location" value={vendor.location} />
                 <Link
                   href={`/vendors/${vendor.id}`}
                   className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-sand-200 py-2 text-[12.5px] font-semibold text-forest-700 hover:bg-forest-50"
                 >
-                  View vendor ledger <Icon.ChevronRight className="h-3.5 w-3.5" />
+                  View vendor ledger{" "}
+                  <Icon.ChevronRight className="h-3.5 w-3.5" />
                 </Link>
               </CardBody>
             </Card>
@@ -260,15 +353,18 @@ export function DistributionDetailScreen({ id }: { id: string }) {
       <Modal
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        title="Delete this distribution?"
+        title="Delete this Sale?"
       >
         <p className="text-[13.5px] text-sand-600">
           This will permanently remove the dispatch to{" "}
-          <span className="font-semibold text-sand-900">{vendor?.name}</span> and
-          restore the stock back to the broker batch. This can&apos;t be undone.
+          <span className="font-semibold text-sand-900">{vendor?.name}</span>
+          {batch ? " and restore the stock back to the broker batch" : ""}. This
+          can&apos;t be undone.
         </p>
         {deleteError && (
-          <p className="mt-3 text-[13px] font-medium text-red-600">{deleteError}</p>
+          <p className="mt-3 text-[13px] font-medium text-red-600">
+            {deleteError}
+          </p>
         )}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setConfirmDelete(false)}>

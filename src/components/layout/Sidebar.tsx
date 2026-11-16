@@ -2,17 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "@/src/components/icons";
+import { Icon, NAV_ICONS } from "@/src/components/icons";
 import { NAV_ITEMS } from "@/src/utils/constants";
 import { cn } from "@/src/utils/cn";
+import { LogoutButton, useCurrentUserEmail } from "@/src/components/layout/AccountControls";
+import { BrandMark } from "@/src/components/brand/BrandLogo";
 
-const iconMap: Record<string, (p: { className?: string }) => React.ReactElement> = {
-  grid: Icon.Grid,
-  truck: Icon.Truck,
-  package: Icon.Package,
-  store: Icon.Store,
-  chart: Icon.Chart,
-};
+function SidebarAccount({ onCloseMobile }: { onCloseMobile: () => void }) {
+  const email = useCurrentUserEmail();
+  return (
+    <div className="m-4 space-y-3 rounded-2xl bg-forest-800/70 p-4">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-banana-500 text-[15px] font-extrabold uppercase text-forest-900">
+          {email ? email[0] : <Icon.Users className="h-5 w-5" />}
+        </span>
+        <div className="min-w-0 leading-tight">
+          <p className="text-[11.5px] font-semibold text-forest-300">Signed in as</p>
+          <p className="truncate text-[13.5px] font-bold text-white" title={email ?? undefined}>
+            {email ?? "…"}
+          </p>
+        </div>
+      </div>
+      <LogoutButton variant="sidebar" onBeforeOpen={onCloseMobile} />
+    </div>
+  );
+}
+
+const iconMap = NAV_ICONS;
 
 export function Sidebar({
   mobileOpen,
@@ -39,21 +55,23 @@ export function Sidebar({
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[272px] shrink-0 -translate-x-full flex-col bg-forest-900 transition-transform duration-200 lg:static lg:translate-x-0",
-          mobileOpen && "translate-x-0"
+          "fixed inset-y-0 left-0 z-50 flex w-[272px] shrink-0 -translate-x-full flex-col bg-forest-900 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          mobileOpen && "translate-x-0",
         )}
       >
         <div className="flex h-[72px] items-center gap-2.5 px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-banana-500 text-forest-900 shadow-soft">
-            <Icon.Banana className="h-5 w-5" />
-          </div>
+          <BrandMark size={44} />
           <div className="leading-tight">
-            <p className="text-[14px] font-extrabold text-white">St. Mary&apos;s</p>
-            <p className="text-[11px] font-medium text-forest-300">Banana Distribution</p>
+            <p className="font-brand text-[17px] font-black text-white">
+              St. Mary&apos;s
+            </p>
+            <p className="text-[11px] font-medium text-forest-300">
+              Banana Sale
+            </p>
           </div>
         </div>
 
-        <nav className="mt-4 flex-1 space-y-1 px-4">
+        <nav className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto px-4 scrollbar-thin">
           <p className="px-2.5 pb-2 pt-3 text-[11px] font-bold uppercase tracking-wider text-forest-400">
             Operations
           </p>
@@ -69,13 +87,15 @@ export function Sidebar({
                   "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold transition-colors",
                   active
                     ? "bg-banana-500 text-forest-900 shadow-soft"
-                    : "text-forest-100/80 hover:bg-forest-800 hover:text-white"
+                    : "text-forest-100/80 hover:bg-forest-800 hover:text-white",
                 )}
               >
                 <ItemIcon
                   className={cn(
                     "h-[18px] w-[18px]",
-                    active ? "text-forest-900" : "text-forest-300 group-hover:text-banana-300"
+                    active
+                      ? "text-forest-900"
+                      : "text-forest-300 group-hover:text-banana-300",
                   )}
                 />
                 {item.label}
@@ -84,15 +104,7 @@ export function Sidebar({
           })}
         </nav>
 
-        <div className="m-4 rounded-2xl bg-forest-800/70 p-4">
-          <p className="flex items-center gap-1.5 text-[12px] font-bold text-banana-300">
-            <Icon.Sparkle className="h-3.5 w-3.5" /> Daily tip
-          </p>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-forest-200">
-            Close a broker batch as soon as remaining stock hits zero to keep
-            the overview accurate.
-          </p>
-        </div>
+        <SidebarAccount onCloseMobile={onCloseMobile} />
       </aside>
     </>
   );

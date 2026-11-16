@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Icon } from "@/src/components/icons";
 import { Button } from "@/src/components/ui/Button";
+import { LogoutButton, SignedInChip } from "@/src/components/layout/AccountControls";
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/": { title: "Dashboard", subtitle: "Today's distribution snapshot" },
-  "/distributions": { title: "Distributions", subtitle: "Every dispatch, tracked end to end" },
+  "/": { title: "Dashboard", subtitle: "Today's Sale snapshot" },
+  "/distributions": { title: "Sales", subtitle: "Every dispatch, tracked end to end" },
   "/brokers": { title: "Brokers", subtitle: "Inward stock & procurement" },
   "/vendors": { title: "Vendors", subtitle: "Shopkeeper ledgers & balances" },
+  "/payments": { title: "Payment Entry", subtitle: "Record vendor payments against pending balances" },
   "/reports": { title: "Reports", subtitle: "Performance across the business" },
 };
 
@@ -18,23 +20,17 @@ function resolveTitle(pathname: string) {
   const base = "/" + (pathname.split("/")[1] ?? "");
   if (TITLES[base]) {
     if (pathname.endsWith("/new")) {
-      return { title: "New Distribution", subtitle: "Step-by-step dispatch entry" };
+      return { title: "New Sale", subtitle: "Step-by-step dispatch entry" };
     }
     return { title: "Details", subtitle: TITLES[base].title };
   }
-  return { title: "St. Mary's", subtitle: "Banana Distribution" };
+  return { title: "St. Mary's", subtitle: "Banana Sale" };
 }
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { title, subtitle } = resolveTitle(pathname);
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
     <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-4 border-b border-sand-200/80 bg-sand-50/85 px-5 backdrop-blur lg:px-8">
@@ -57,17 +53,11 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
         <Link href="/distributions/new" className="hidden sm:block">
           <Button size="md">
             <Icon.Plus className="h-4 w-4" />
-            New Distribution
+            New Sale
           </Button>
         </Link>
-        <button
-          type="button"
-          onClick={handleLogout}
-          title="Log out"
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest-800 text-white transition hover:bg-forest-700 cursor-pointer"
-        >
-          <Icon.LogOut className="h-[18px] w-[18px]" />
-        </button>
+        <SignedInChip />
+        <LogoutButton variant="topbar" />
       </div>
     </header>
   );

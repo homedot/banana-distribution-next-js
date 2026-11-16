@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/src/components/icons";
 import { Input } from "@/src/components/ui/Field";
 import { Button } from "@/src/components/ui/Button";
+import { BrandLogo } from "@/src/components/brand/BrandLogo";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -41,15 +42,8 @@ export function LoginScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-sand-50 px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-banana-500 text-forest-900 shadow-soft">
-            <Icon.Banana className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-[18px] font-extrabold text-sand-900">St. Mary&apos;s</h1>
-            <p className="text-[12.5px] text-sand-500">Banana Distribution Management</p>
-          </div>
-        </div>
+        <h1 className="sr-only">St. Mary&apos;s Banana Distribution — Sign in</h1>
+        <BrandLogo className="mb-8" />
 
         <form
           onSubmit={handleSubmit}
@@ -84,7 +78,12 @@ export function LoginScreen() {
             </div>
           )}
 
-          <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={submitting}
+          >
             {submitting ? "Signing in…" : "Sign in"}
           </Button>
         </form>

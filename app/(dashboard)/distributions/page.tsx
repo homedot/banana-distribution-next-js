@@ -1,5 +1,5 @@
-import { DistributionsListScreen } from "@/src/screens/Distributions/DistributionsListScreen";
+import { SalesListScreen } from "@/src/screens/Sales/SalesListScreen";
 
 export default function Page() {
-  return <DistributionsListScreen />;
+  return <SalesListScreen />;
 }

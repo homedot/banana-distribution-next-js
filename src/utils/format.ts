@@ -1,9 +1,22 @@
+const wholeRupees = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+const withPaise = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/**
+ * ₹1,500 for whole amounts, ₹14.99 when there are paise. Never rounds paise
+ * away — otherwise ₹14.99 shows as ₹15 and "₹15 exceeds ₹15" looks like a bug.
+ */
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(value) ? value : 0);
+  const v = Number.isFinite(value) ? Math.round(value * 100) / 100 : 0;
+  return Number.isInteger(v) ? wholeRupees.format(v) : withPaise.format(v);
 }
 
 export function formatNumber(value: number, fractionDigits = 0): string {
