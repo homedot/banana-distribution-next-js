@@ -30,9 +30,20 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (!cache.promise) {
     cache.promise = mongoose.connect(uri, {
       dbName: process.env.MONGODB_DB_NAME || "banana_distribution",
+      // Fail within the serverless function's time limit (default would be 30s),
+      // e.g. when Atlas Network Access doesn't allow this server's IP.
+      serverSelectionTimeoutMS: 8000,
     });
   }
 
-  cache.conn = await cache.promise;
+  try {
+    cache.conn = await cache.promise;
+  } catch (err) {
+    // Don't keep a failed attempt cached — otherwise every later request fails
+    // instantly until the server restarts, even after the cause is fixed.
+    cache.promise = null;
+    console.error("[db] MongoDB connection failed:", err instanceof Error ? err.message : err);
+    throw err;
+  }
   return cache.conn;
 }
