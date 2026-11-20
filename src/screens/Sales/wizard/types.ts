@@ -88,8 +88,12 @@ export function paymentFieldErrors(state: WizardState): Partial<Record<PaymentFi
   const collected = Number(raw) || 0;
   const netPayable = calcNetPayable(saleTotals(state).grossTotal, Number(state.discount) || 0);
 
-  if (raw && !Number.isFinite(Number(raw))) errors.amountCollected = "Enter a valid amount";
+  if (!raw) errors.amountCollected = "Enter the amount collected (0 if nothing was paid)";
+  else if (!/^-?\d*\.?\d*$/.test(raw) || !Number.isFinite(Number(raw)))
+    errors.amountCollected = "Enter a valid amount";
   else if (collected < 0) errors.amountCollected = "Amount can't be negative";
+  else if (!/^\d*(\.\d{0,2})?$/.test(raw))
+    errors.amountCollected = "Use at most 2 decimal places";
   else if (collected > netPayable)
     errors.amountCollected = `Can't be more than the net payable (₹${netPayable.toLocaleString("en-IN")})`;
 
@@ -256,7 +260,7 @@ export function wizardStateFromSale(d: Sale): WizardState {
     thanduCount: String(d.thanduCount),
     rateBasis: d.rateBasis,
     discount: String(d.discount || ""),
-    amountCollected: String(d.amountCollected || ""),
+    amountCollected: String(d.amountCollected ?? 0),
     paymentMethod: d.paymentMethod,
     paymentDetails: { ...emptyPaymentDetails, ...d.paymentDetails },
     notes: d.notes,
