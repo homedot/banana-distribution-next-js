@@ -189,9 +189,23 @@ export function PaymentEntryScreen() {
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         {/* Entry form */}
-        <Card className="xl:col-span-3">
-          <CardHeader>
-            <CardTitle>New Payment</CardTitle>
+        <Card className="relative xl:col-span-3 border-forest-200! ring-4 ring-forest-50 shadow-[0_2px_4px_rgba(26,86,54,0.06),0_18px_40px_-12px_rgba(26,86,54,0.28)]! transition-shadow hover:shadow-[0_4px_8px_rgba(26,86,54,0.08),0_24px_48px_-12px_rgba(26,86,54,0.34)]!">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-linear-to-r from-forest-600 via-forest-500 to-banana-400"
+          />
+          <CardHeader className="border-b border-sand-100 pb-4 pt-6">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest-50 text-forest-700 ring-1 ring-forest-100">
+                <Icon.Wallet className="h-5 w-5" />
+              </span>
+              <div>
+                <CardTitle className="text-[16px]">New Payment</CardTitle>
+                <p className="mt-0.5 text-[12px] font-medium text-sand-500">
+                  Record a payment received from a customer
+                </p>
+              </div>
+            </div>
           </CardHeader>
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-5">
