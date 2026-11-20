@@ -133,39 +133,68 @@ export interface ChartBucket {
   end: string;
 }
 
+/** How the chart groups days for the selected period. */
+export type ChartGrain = "day" | "week" | "month";
+
 /**
  * Chart x-axis buckets for a period:
  * - day   → the 7 days ending on that day (context around the selected day)
  * - week  → each day of the week
  * - month → each day of the month
- * - all   → one bucket per month, from the first to the last month with sales
+ * - all   → sized to the data, so it's readable whatever the history:
+ *           up to ~1 month → days (at least 7), up to ~6 months → weeks,
+ *           longer → months
  */
-export function chartBuckets(period: Period, anchor: string, allDayKeys: string[]): ChartBucket[] {
+export function chartBuckets(
+  period: Period,
+  anchor: string,
+  allDayKeys: string[],
+): { grain: ChartGrain; buckets: ChartBucket[] } {
   const day = (key: string): ChartBucket => ({
-    label: fmt(key, { day: "2-digit", month: "short" }),
+    label: fmt(key, { day: "numeric", month: "short" }),
     start: key,
     end: key,
   });
+  const days = (start: string, end: string) => {
+    const out: ChartBucket[] = [];
+    for (let k = start; k <= end; k = addDays(k, 1)) out.push(day(k));
+    return out;
+  };
   if (period === "day") {
-    return Array.from({ length: 7 }, (_, i) => day(addDays(anchor, i - 6)));
+    return { grain: "day", buckets: days(addDays(anchor, -6), anchor) };
   }
   if (period === "week" || period === "month") {
     const { start, end } = periodRange(period, anchor);
-    const out: ChartBucket[] = [];
-    for (let k = start!; k <= end!; k = addDays(k, 1)) out.push(day(k));
-    return out;
+    return { grain: "day", buckets: days(start!, end!) };
   }
-  if (allDayKeys.length === 0) return [];
+
+  if (allDayKeys.length === 0) return { grain: "day", buckets: [] };
   const sorted = [...allDayKeys].sort();
-  const out: ChartBucket[] = [];
-  let k = sorted[0].slice(0, 7) + "-01";
+  const first = sorted[0];
   const last = sorted[sorted.length - 1];
+  const spanDays =
+    Math.round((keyToDate(last).getTime() - keyToDate(first).getTime()) / 86_400_000) + 1;
+
+  if (spanDays <= 31) {
+    // Always show at least a week, so a single day of sales still has context.
+    const start = spanDays < 7 ? addDays(last, -6) : first;
+    return { grain: "day", buckets: days(start, last) };
+  }
+  if (spanDays <= 26 * 7) {
+    const out: ChartBucket[] = [];
+    for (let k = weekStart(first); k <= last; k = addDays(k, 7)) {
+      out.push({ label: fmt(k, { day: "numeric", month: "short" }), start: k, end: addDays(k, 6) });
+    }
+    return { grain: "week", buckets: out };
+  }
+  const out: ChartBucket[] = [];
+  let k = first.slice(0, 7) + "-01";
   while (k <= last) {
     const r = periodRange("month", k);
     out.push({ label: fmt(k, { month: "short", year: "2-digit" }), start: r.start!, end: r.end! });
     k = shiftAnchor("month", k, 1);
   }
-  return out;
+  return { grain: "month", buckets: out };
 }
 
 export interface PeriodValue {

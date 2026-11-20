@@ -140,9 +140,10 @@ export const Icon = {
   ),
   Banana: (p: IconProps) => (
     <svg {...base(p)}>
-      <path d="M5.5 5c-1 3.5-.5 9 2 12.5 2.3 3.2 7 4 9.8 1.6" />
-      <path d="M17.3 19.1c1.6-.5 2.7-1.9 2.7-3.6" />
-      <path d="M5.5 5c1.6-.8 3-.6 3.6.6" />
+      {/* Body: a closed crescent, with the stem on top and a ridge for depth. */}
+      <path d="M15.6 5.6c.6 5.6-3 10.6-9.6 12.3-.9.2-1.6.9-1.5 1.7.1.6.6 1 1.2 1.1 7.8.9 14.2-5 13.5-12.3-.1-1.1-.5-2.1-1-3" />
+      <path d="M15.6 5.6 15.2 3.5h2.4l.6 2.2" />
+      <path d="M17.3 9.5c-.2 4.6-4.1 8.6-9.3 9.4" />
     </svg>
   ),
   Users: (p: IconProps) => (
@@ -211,6 +212,19 @@ export const Icon = {
       <path d="M15.5 16.5 20 12l-4.5-4.5M20 12H9" />
     </svg>
   ),
+  Eye: (p: IconProps) => (
+    <svg {...base(p)}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  EyeOff: (p: IconProps) => (
+    <svg {...base(p)}>
+      <path d="M10.6 5.6A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.5 7.1C3.9 8.8 2.5 12 2.5 12S6 18.5 12 18.5c1.9 0 3.6-.6 5-1.5" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="m3 3 18 18" />
+    </svg>
+  ),
   UserPlus: (p: IconProps) => (
     <svg {...base(p)}>
       <circle cx="10" cy="8.5" r="3.5" />
@@ -228,4 +242,5 @@ export const NAV_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
   store: Icon.Store,
   chart: Icon.Chart,
   wallet: Icon.Wallet,
+  banana: Icon.Banana,
 };

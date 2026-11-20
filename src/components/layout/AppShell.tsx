@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Sidebar } from "@/src/components/layout/Sidebar";
 import { Topbar } from "@/src/components/layout/Topbar";
 import { SidebarSkeleton } from "@/src/components/layout/SidebarSkeleton";
@@ -38,6 +38,17 @@ function DataStatusBar() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Pressing Back after logging out can restore this page from the browser's
+  // back/forward cache without asking the server. Reload instead, so the
+  // session is checked again (and a signed-out visitor lands on /login).
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) window.location.reload();
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-sand-50">

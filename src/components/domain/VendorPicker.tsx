@@ -50,7 +50,7 @@ export function VendorPicker({
   return (
     <div className="relative" ref={wrapRef}>
       <span className="mb-1.5 block text-[13px] font-semibold text-sand-700">
-        Shopkeeper / Vendor Name<span className="ml-0.5 text-banana-600">*</span>
+        Shopkeeper / Customer Name<span className="ml-0.5 text-banana-600">*</span>
       </span>
 
       {!open && (
@@ -68,7 +68,7 @@ export function VendorPicker({
               <span className="text-xs text-sand-400">{selected.location}</span>
             </span>
           ) : (
-            <span className="text-sand-400">Search or select a vendor…</span>
+            <span className="text-sand-400">Search or select a customer…</span>
           )}
           <Icon.ChevronDown className="h-4 w-4 text-sand-400" />
         </button>
@@ -97,8 +97,8 @@ export function VendorPicker({
           <div className="max-h-56 overflow-y-auto scrollbar-thin py-1">
             {filtered.length === 0 && (
               <p className="px-3.5 py-3 text-[13px] text-sand-400">
-                No vendors match &ldquo;{query}&rdquo;. Use{" "}
-                <span className="font-semibold text-sand-600">Vendors</span> in the
+                No customers match &ldquo;{query}&rdquo;. Use{" "}
+                <span className="font-semibold text-sand-600">Customers</span> in the
                 menu to add one.
               </p>
             )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/src/components/icons";
+import { DateField } from "@/src/components/ui/DatePicker";
 import { cn } from "@/src/utils/cn";
 import { isAllTime, rangeLabel, type PeriodRange } from "@/src/utils/period";
 
@@ -44,7 +45,7 @@ export function DateRangeFilter({
 
   const dateInput = (hasError: boolean) =>
     cn(
-      "h-14 w-full rounded-2xl border-2 bg-white px-4 text-[18px] font-semibold text-sand-900 outline-none transition",
+      "flex h-14 w-full items-center gap-2.5 rounded-2xl border-2 bg-white px-4 text-left text-[18px] font-semibold text-sand-900 outline-none transition cursor-pointer",
       "focus:border-forest-600 focus:ring-4 focus:ring-forest-100",
       hasError ? "border-red-400" : "border-sand-300 hover:border-forest-400",
     );
@@ -74,32 +75,34 @@ export function DateRangeFilter({
           apply();
         }}
       >
-        <label className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5">
           <span className="text-[15px] font-bold text-sand-700">From</span>
-          <input
-            type="date"
+          <DateField
+            aria-label="From date"
+            placeholder="Start date"
             value={from}
             max={to || undefined}
-            onChange={(e) => {
-              setFrom(e.target.value);
+            onChange={(v) => {
+              setFrom(v);
               setError(null);
             }}
             className={dateInput(Boolean(error) && !from)}
           />
-        </label>
-        <label className="flex flex-col gap-1.5">
+        </div>
+        <div className="flex flex-col gap-1.5">
           <span className="text-[15px] font-bold text-sand-700">To</span>
-          <input
-            type="date"
+          <DateField
+            aria-label="To date"
+            placeholder="End date"
             value={to}
             min={from || undefined}
-            onChange={(e) => {
-              setTo(e.target.value);
+            onChange={(v) => {
+              setTo(v);
               setError(null);
             }}
             className={dateInput(Boolean(error) && Boolean(from))}
           />
-        </label>
+        </div>
         <div className="flex gap-2">
           <button
             type="submit"

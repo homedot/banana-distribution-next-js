@@ -55,6 +55,17 @@ export interface PaymentDetails {
   bankReference: string;
 }
 
+export interface SaleKayaItem {
+  kayaType: string;
+  kolaQuantity: number;
+  /** Missing on items saved before per-kaya quality; fall back to the sale's. */
+  qualityCategory?: QualityCategory;
+  /** kg for this kaya type. Missing on items saved before per-kaya pricing. */
+  totalWeight?: number;
+  /** Rate for this kaya type, per the sale's rateBasis. Missing on items saved before per-kaya pricing. */
+  sellingRate?: number;
+}
+
 export interface Sale {
   id: string;
   vendorId: string;
@@ -64,11 +75,15 @@ export interface Sale {
   kayaType: string;
   /** Every kaya type in the sale. Missing/empty on older single-type sales. */
   kayaTypes?: string[];
+  /** Kola quantity per kaya type. Missing on sales saved before per-kaya quantities. */
+  kayaItems?: SaleKayaItem[];
+  /** Overall grade: the kaya items' shared grade, or "Mixed" when they differ. */
   qualityCategory: QualityCategory;
   kolaQuantity: number;
   totalWeight: number;
   thanduCount: number;
   rateBasis: RateBasis;
+  /** Average rate across the kaya items (grossTotal ÷ kolas or kg); each item has its own `sellingRate`. */
   dailySellingRate: number;
   grossTotal: number;
   discount: number;
@@ -104,7 +119,15 @@ export interface Payment {
 
 export type PaymentInput = Pick<Payment, "vendorId" | "amount" | "method" | "date" | "reference" | "notes">;
 
+/** A kola category (kaya type) offered on New Sale. */
+export interface KayaType {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface AppData {
+  kayaTypes: KayaType[];
   brokers: Broker[];
   batches: BrokerBatch[];
   vendors: Vendor[];

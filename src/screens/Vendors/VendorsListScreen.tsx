@@ -10,7 +10,8 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Icon } from "@/src/components/icons";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { Button } from "@/src/components/ui/Button";
-import { AddVendorModal } from "@/src/components/domain/AddVendorModal";
+import { VendorFormModal } from "@/src/components/domain/AddVendorModal";
+import type { Vendor } from "@/src/types";
 import { DateRangeFilter } from "@/src/components/domain/DateRangeFilter";
 import {
   ALL_TIME,
@@ -26,6 +27,7 @@ export function VendorsListScreen() {
   const { data } = useAppData();
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Vendor | null>(null);
   // The applied From → To range (all time until the user presses Apply).
   const [range, setRange] = useState<PeriodRange>(ALL_TIME);
   const filtered = !isAllTime(range);
@@ -65,17 +67,22 @@ export function VendorsListScreen() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search vendor or shop…"
+            placeholder="Search customer or shop…"
             className="h-11 w-full rounded-xl border border-sand-200 bg-white pl-10 pr-3.5 text-[14px] outline-none transition focus:border-forest-400 focus:ring-4 focus:ring-forest-100"
           />
         </div>
         <Button size="lg" onClick={() => setAddOpen(true)}>
           <Icon.UserPlus className="h-[18px] w-[18px]" />
-          Add Vendor
+          Add Customer
         </Button>
       </div>
 
-      <AddVendorModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <VendorFormModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <VendorFormModal
+        open={editing !== null}
+        vendor={editing}
+        onClose={() => setEditing(null)}
+      />
 
       <DateRangeFilter value={range} onApply={setRange} />
 
@@ -87,7 +94,7 @@ export function VendorsListScreen() {
               {formatCurrency(totals.billed)}
             </p>
             <p className="text-[14px] font-semibold text-sand-500">
-              {summaries.length} {summaries.length === 1 ? "vendor" : "vendors"}
+              {summaries.length} {summaries.length === 1 ? "customer" : "customers"}
             </p>
           </div>
           <div className="rounded-2xl bg-emerald-50 px-5 py-4">
@@ -111,22 +118,22 @@ export function VendorsListScreen() {
             <div className="p-5">
               <EmptyState
                 icon={<Icon.Store className="h-6 w-6" />}
-                title={filtered && !query ? `No sales ${phrase}` : "No vendors found"}
+                title={filtered && !query ? `No sales ${phrase}` : "No customers found"}
                 description={
                   query
-                    ? "No vendors match your search."
+                    ? "No customers match your search."
                     : filtered
-                      ? "No vendor bought anything in this period. Try other dates, or press Clear to see all."
-                      : "Click Add Vendor to register your first shopkeeper."
+                      ? "No customer bought anything in this period. Try other dates, or press Clear to see all."
+                      : "Click Add Customer to register your first shopkeeper."
                 }
               />
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] text-left text-[13px]">
+              <table className="w-full min-w-[720px] text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-sand-100 text-[11px] uppercase tracking-wide text-sand-400">
-                    <th className="px-5 py-3 font-semibold">Vendor</th>
+                    <th className="px-5 py-3 font-semibold">Customer</th>
                     <th className="px-3 py-3 font-semibold">Location</th>
                     <th className="px-3 py-3 font-semibold text-right">Kolas</th>
                     <th className="px-3 py-3 font-semibold text-right">Net Payable</th>
@@ -167,13 +174,24 @@ export function VendorsListScreen() {
                       <td className="px-3 py-3 text-sand-500">
                         {s.lastActivity ? formatDate(s.lastActivity) : "—"}
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <Link
-                          href={`/vendors/${s.vendor.id}${rangeQuery(range)}`}
-                          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-forest-700 hover:underline"
-                        >
-                          View <Icon.ChevronRight className="h-3.5 w-3.5" />
-                        </Link>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(s.vendor)}
+                            aria-label={`Edit ${s.vendor.name}`}
+                            title="Edit customer"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-sand-500 transition cursor-pointer hover:bg-forest-50 hover:text-forest-700"
+                          >
+                            <Icon.Edit className="h-4 w-4" />
+                          </button>
+                          <Link
+                            href={`/vendors/${s.vendor.id}${rangeQuery(range)}`}
+                            className="ml-1 inline-flex items-center gap-1 text-[12.5px] font-semibold text-forest-700 hover:underline"
+                          >
+                            View <Icon.ChevronRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

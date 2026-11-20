@@ -1,42 +1,79 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useLayoutEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/src/components/icons";
 import { Input } from "@/src/components/ui/Field";
 import { Button } from "@/src/components/ui/Button";
 import { BrandLogo } from "@/src/components/brand/BrandLogo";
+import { withLoading } from "@/src/store/loading";
+import { goAfterLogin, readJson } from "@/src/lib/auth-navigation";
 
 export function LoginScreen() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Start clean whenever this screen is shown again. Next.js may keep it alive
+  // (hidden) between visits, and the browser may restore it from its
+  // back/forward cache — either way, a stale "Signing in…", a stale error or
+  // the last password must never reappear.
+  function resetForm() {
+    setSubmitting(false);
+    setPassword("");
+    setShowPassword(false);
+    setError(null);
+  }
+  useLayoutEffect(() => resetForm, []);
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) resetForm();
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (submitting) return;
     setSubmitting(true);
     setError(null);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      await withLoading("Signing in…", async () => {
+        let res: Response;
+        try {
+          res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email.trim(), password }),
+          });
+        } catch {
+          throw new Error("Can't reach the server. Check your connection and try again.");
+        }
+        const body = await readJson(res);
+        if (!res.ok || !body?.success) {
+          const message = typeof body?.message === "string" ? body.message : null;
+          throw new Error(
+            message ??
+              (res.status >= 500
+                ? "The server had a problem signing you in. Please try again."
+                : "Invalid email or password"),
+          );
+        }
       });
-      const body = await res.json();
-
-      if (!res.ok || !body.success) {
-        throw new Error(body.message ?? "Invalid email or password");
-      }
-
-      router.push("/");
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+      setPassword("");
       setSubmitting(false);
+      return;
     }
+
+    // Signed in. A full page load (not router.push) so the dashboard starts
+    // fresh for this user. "Signing in…" stays up until the page changes.
+    setPassword("");
+    goAfterLogin();
   }
 
   return (
@@ -63,12 +100,28 @@ export function LoginScreen() {
           />
           <Input
             label="Password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                title={showPassword ? "Hide password" : "Show password"}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-sand-400 transition cursor-pointer hover:bg-sand-100 hover:text-sand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-400"
+              >
+                {showPassword ? (
+                  <Icon.EyeOff className="h-[18px] w-[18px]" />
+                ) : (
+                  <Icon.Eye className="h-[18px] w-[18px]" />
+                )}
+              </button>
+            }
           />
 
           {error && (

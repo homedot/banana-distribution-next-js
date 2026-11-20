@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useAppData } from "@/src/store/data-context";
 import {
   calcBalanceDue,
-  calcGrossTotal,
   calcNetPayable,
 } from "@/src/utils/calculations";
 import { formatCurrency } from "@/src/utils/format";
@@ -14,12 +13,13 @@ import { cn } from "@/src/utils/cn";
 import { Button } from "@/src/components/ui/Button";
 import { Card, CardBody } from "@/src/components/ui/Card";
 import { Icon } from "@/src/components/icons";
+import type { Sale } from "@/src/types";
 import {
-  ACCOUNT_NUMBER_PATTERN,
   emptyWizardState,
-  IFSC_PATTERN,
   paymentDetailsForMethod,
-  UPI_ID_PATTERN,
+  paymentFieldErrors,
+  overallQuality,
+  saleTotals,
   wizardStateFromSale,
   type WizardState,
 } from "@/src/screens/Sales/wizard/types";
@@ -36,7 +36,7 @@ function todayISO() {
 
 const SECTIONS = [
   {
-    title: "Vendor & Kaya Types",
+    title: "Customer & Kaya Types",
     description: "Who this sale is for, and which kaya types.",
   },
   {
@@ -56,45 +56,33 @@ const SECTIONS = [
 function validateStep(index: number, state: WizardState): string | null {
   switch (index) {
     case 0:
-      if (!state.vendorId) return "Select a vendor to continue";
-      if (state.kayaTypes.length === 0) return "Select at least one kaya type to continue";
+      if (!state.vendorId) return "Select a customer to continue";
+      if (state.kayaTypes.length === 0)
+        return "Select at least one kaya type to continue";
       return null;
     case 1: {
-      const qty = Number(state.kolaQuantity) || 0;
-      const weight = Number(state.totalWeight) || 0;
-      if (qty <= 0) return "Enter the kola quantity";
-      if (weight <= 0) return "Enter the total weight";
+      if (state.kayaTypes.length === 0)
+        return "Select a kaya type to enter its kola quantity";
+      const positive = (v: string | undefined) => (Number(v) || 0) > 0;
+      for (const k of state.kayaTypes) {
+        if (!positive(state.kayaQuantities[k]))
+          return `Enter the kola quantity for ${k}`;
+        if (!positive(state.kayaWeights[k])) return `Enter the weight for ${k}`;
+      }
       return null;
     }
     case 2: {
-      const rate = Number(state.dailySellingRate) || 0;
-      if (rate <= 0) return "Enter the daily selling rate";
+      if (state.kayaTypes.length === 0)
+        return "Select a kaya type to enter its selling rate";
+      const noRate = state.kayaTypes.find(
+        (k) => !((Number(state.kayaRates[k]) || 0) > 0),
+      );
+      if (noRate) return `Enter the selling rate for ${noRate}`;
       return null;
     }
     case 3: {
-      const collected = Number(state.amountCollected) || 0;
-      if (collected < 0) return "Amount collected cannot be negative";
-      const d = state.paymentDetails;
-      if (state.paymentMethod === "upi") {
-        const upiId = d.upiId.trim();
-        if (collected > 0 && !upiId)
-          return "Enter the UPI ID the payment came from";
-        if (upiId && !UPI_ID_PATTERN.test(upiId))
-          return "Enter a valid UPI ID (e.g. name@okaxis)";
-      }
-      if (state.paymentMethod === "bank_transfer") {
-        if (collected > 0 && !d.bankName.trim())
-          return "Enter the bank name for the transfer";
-        if (collected > 0 && !d.bankReference.trim())
-          return "Enter the UTR / reference number for the transfer";
-        const acc = d.accountNumber.replace(/\s+/g, "");
-        if (acc && !ACCOUNT_NUMBER_PATTERN.test(acc))
-          return "Account number should be 9–18 digits";
-        const ifsc = d.ifscCode.trim().toUpperCase();
-        if (ifsc && !IFSC_PATTERN.test(ifsc))
-          return "Enter a valid IFSC code (e.g. SBIN0001234)";
-      }
-      return null;
+      const errors = paymentFieldErrors(state);
+      return Object.values(errors).find(Boolean) ?? null;
     }
     default:
       return null;
@@ -139,9 +127,42 @@ function SectionHeader({
 }
 
 export function CreateSaleScreen({ saleId }: { saleId?: string }) {
-  const router = useRouter();
-  const { data, addSale, updateSale } = useAppData();
+  const { bfcacheId } = useRouter();
+  const { data, loading } = useAppData();
   const existing = saleId ? data.sales.find((d) => d.id === saleId) : undefined;
+
+  // Editing, but the sales haven't loaded yet (or the id is wrong): wait,
+  // rather than starting an empty form that would never fill in.
+  if (saleId && !existing) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-5 pb-6">
+        <Link
+          href="/distributions"
+          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sand-500 hover:text-sand-800"
+        >
+          <Icon.ArrowLeft className="h-4 w-4" />
+          Back to Sales
+        </Link>
+        <Card>
+          <CardBody className="py-10 text-center text-[14px] text-sand-500">
+            {loading ? "Loading sale…" : "This sale could not be found."}
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  // The form is filled in once, when it mounts. Next.js keeps visited pages
+  // alive between visits, so without a key a second "Edit" of the same sale
+  // would reopen the old form (pre-save values, e.g. the old date) and a
+  // second "New Sale" would still hold the last sale. bfcacheId changes on
+  // every fresh visit and stays the same for browser back/forward.
+  return <SaleForm key={`${bfcacheId}:${existing?.id ?? "new"}`} existing={existing} />;
+}
+
+function SaleForm({ existing }: { existing?: Sale }) {
+  const router = useRouter();
+  const { addSale, updateSale } = useAppData();
 
   const [state, setState] = useState<WizardState>(() =>
     existing ? wizardStateFromSale(existing) : emptyWizardState,
@@ -162,13 +183,10 @@ export function CreateSaleScreen({ saleId }: { saleId?: string }) {
     setError(null);
   }
 
-  const rate = Number(state.dailySellingRate) || 0;
-  const weight = Number(state.totalWeight) || 0;
-  const kolas = Number(state.kolaQuantity) || 0;
+  const { lines, kolas, weight, grossTotal, averageRate } = saleTotals(state);
   const discount = Number(state.discount) || 0;
   const collected = Number(state.amountCollected) || 0;
 
-  const grossTotal = calcGrossTotal(state.rateBasis, rate, weight, kolas);
   const netPayable = calcNetPayable(grossTotal, discount);
   const balanceDue = calcBalanceDue(netPayable, collected);
 
@@ -192,12 +210,19 @@ export function CreateSaleScreen({ saleId }: { saleId?: string }) {
       batchId: state.batchId || null,
       kayaTypes: state.kayaTypes,
       kayaType: state.kayaTypes.join(", "),
-      qualityCategory: state.qualityCategory,
+      kayaItems: lines.map((l) => ({
+        kayaType: l.kayaType,
+        kolaQuantity: l.kolaQuantity,
+        qualityCategory: l.qualityCategory,
+        totalWeight: l.totalWeight,
+        sellingRate: l.sellingRate,
+      })),
+      qualityCategory: overallQuality(state),
       kolaQuantity: kolas,
       totalWeight: weight,
       thanduCount: thandu,
       rateBasis: state.rateBasis,
-      dailySellingRate: rate,
+      dailySellingRate: averageRate,
       grossTotal,
       discount,
       netPayable,
@@ -265,11 +290,18 @@ export function CreateSaleScreen({ saleId }: { saleId?: string }) {
                   state={state}
                   update={update}
                   showErrors={attempted}
+                  editingSaleId={existing?.id}
                 />
               )}
               {i === 1 && <StepQuantity state={state} update={update} />}
               {i === 2 && <StepPricing state={state} update={update} />}
-              {i === 3 && <StepPayment state={state} update={update} />}
+              {i === 3 && (
+                <StepPayment
+                  state={state}
+                  update={update}
+                  showErrors={attempted}
+                />
+              )}
             </CardBody>
           </Card>
         </div>

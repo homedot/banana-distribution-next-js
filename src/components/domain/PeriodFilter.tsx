@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Icon } from "@/src/components/icons";
+import { CalendarPopover } from "@/src/components/ui/DatePicker";
 import { cn } from "@/src/utils/cn";
 import {
   isCurrentPeriod,
@@ -28,19 +29,13 @@ export function PeriodFilter({
   anchor,
   onChange,
 }: PeriodValue & { onChange: (next: PeriodValue) => void }) {
-  const dateInput = useRef<HTMLInputElement>(null);
+  // Whichever calendar button is on screen anchors the popover.
+  const calendarAnchor = useRef<HTMLButtonElement>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const atCurrent = isCurrentPeriod(period, anchor);
 
   function openCalendar() {
-    const input = dateInput.current;
-    if (!input) return;
-    input.value = anchor || todayKey();
-    try {
-      input.showPicker();
-    } catch {
-      // Older browsers: focusing the input still lets the user type a date.
-      input.focus();
-    }
+    setCalendarOpen((o) => !o);
   }
 
   function onPickDate(value: string) {
@@ -53,7 +48,7 @@ export function PeriodFilter({
     "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-sand-300 bg-white text-sand-800 transition cursor-pointer hover:border-forest-500 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-sand-300";
 
   return (
-    <div className="relative flex flex-col gap-3 rounded-2xl border border-sand-200/80 bg-white p-3 shadow-soft lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-sand-200/80 bg-white p-3 shadow-soft lg:flex-row lg:items-center lg:justify-between">
       <div
         role="radiogroup"
         aria-label="Show figures for"
@@ -82,19 +77,25 @@ export function PeriodFilter({
         })}
       </div>
 
-      {/* Native date picker, opened by the calendar buttons below. */}
-      <input
-        ref={dateInput}
-        type="date"
-        tabIndex={-1}
-        aria-hidden
-        className="pointer-events-none absolute bottom-0 right-3 h-0 w-0 opacity-0"
-        onChange={(e) => onPickDate(e.target.value)}
+      <CalendarPopover
+        open={calendarOpen}
+        anchorRef={calendarAnchor}
+        onClose={() => setCalendarOpen(false)}
+        // No anchor on "All Time": the calendar opens on today's month itself.
+        // (Don't call todayKey() here — render-time `new Date()` breaks prerender.)
+        value={anchor || undefined}
+        onSelect={(key) => {
+          setCalendarOpen(false);
+          onPickDate(key);
+        }}
       />
 
       {period === "all" ? (
         <button
+          ref={calendarAnchor}
           type="button"
+          aria-haspopup="dialog"
+          aria-expanded={calendarOpen}
           onClick={openCalendar}
           className="flex h-12 items-center justify-center gap-2 rounded-xl border-2 border-sand-300 bg-white px-4 text-[16px] font-bold text-sand-800 transition cursor-pointer hover:border-forest-500"
         >
@@ -112,7 +113,10 @@ export function PeriodFilter({
             <Icon.ChevronLeft className="h-6 w-6" />
           </button>
           <button
+            ref={calendarAnchor}
             type="button"
+            aria-haspopup="dialog"
+            aria-expanded={calendarOpen}
             onClick={openCalendar}
             title="Pick a date"
             className="flex h-12 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-banana-50 px-4 transition hover:bg-banana-100 lg:min-w-[240px]"

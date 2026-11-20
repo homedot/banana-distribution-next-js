@@ -1,4 +1,5 @@
-import type { Broker, BrokerBatch, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
+import { currentPath, goToLogin, readJson } from "@/src/lib/auth-navigation";
+import type { Broker, BrokerBatch, KayaType, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
 
 interface ApiSuccess<T> {
   success: true;
@@ -16,16 +17,36 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
 
-  const body = (await res.json()) as ApiSuccess<T> | ApiFailure;
+  // Session expired or cookie gone: send the user to sign in, then back here.
+  if (res.status === 401) {
+    goToLogin(currentPath());
+    throw new Error("Your session has expired. Please sign in again.");
+  }
 
-  if (!res.ok || !body.success) {
-    throw new Error(!body.success ? body.message : `Request to ${url} failed`);
+  const body = (await readJson(res)) as ApiSuccess<T> | ApiFailure | null;
+
+  if (!res.ok || !body?.success) {
+    throw new Error(
+      body && !body.success && body.message
+        ? body.message
+        : `The server couldn't complete the request (error ${res.status}). Please try again.`,
+    );
   }
 
   return body.data;
 }
 
 export const api = {
+  kayaTypes: {
+    list: () => request<KayaType[]>("/api/kaya-types"),
+    create: (name: string) =>
+      request<KayaType>("/api/kaya-types", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }),
+    remove: (id: string) =>
+      request<{ id: string }>(`/api/kaya-types/${id}`, { method: "DELETE" }),
+  },
   brokers: {
     list: () => request<Broker[]>("/api/brokers"),
     create: (input: Omit<Broker, "id" | "createdAt">) =>
@@ -39,6 +60,11 @@ export const api = {
     create: (input: Omit<Vendor, "id" | "createdAt">) =>
       request<Vendor>("/api/vendors", {
         method: "POST",
+        body: JSON.stringify(input),
+      }),
+    update: (id: string, input: Omit<Vendor, "id" | "createdAt">) =>
+      request<Vendor>(`/api/vendors/${id}`, {
+        method: "PUT",
         body: JSON.stringify(input),
       }),
   },

@@ -22,7 +22,7 @@ export async function createVendor(input: VendorInput) {
 export async function getVendorById(id: string) {
   await connectDB();
   const vendor = await Vendor.findById(id);
-  if (!vendor) throw new ApiError(404, "Vendor not found");
+  if (!vendor) throw new ApiError(404, "Customer not found");
   return vendor;
 }
 
@@ -32,13 +32,13 @@ export async function updateVendor(id: string, input: Partial<VendorInput>) {
     returnDocument: "after",
     runValidators: true,
   });
-  if (!vendor) throw new ApiError(404, "Vendor not found");
+  if (!vendor) throw new ApiError(404, "Customer not found");
   return vendor;
 }
 
 export async function deleteVendor(id: string) {
   await connectDB();
   const vendor = await Vendor.findByIdAndDelete(id);
-  if (!vendor) throw new ApiError(404, "Vendor not found");
+  if (!vendor) throw new ApiError(404, "Customer not found");
   return vendor;
 }

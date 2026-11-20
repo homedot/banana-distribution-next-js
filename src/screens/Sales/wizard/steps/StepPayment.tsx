@@ -1,21 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import {
   calcBalanceDue,
-  calcGrossTotal,
   calcNetPayable,
 } from "@/src/utils/calculations";
 import { formatCurrency } from "@/src/utils/format";
 import { PAYMENT_METHODS } from "@/src/utils/constants";
 import { Input, Textarea } from "@/src/components/ui/Field";
 import { Dropdown } from "@/src/components/ui/Dropdown";
+import { DatePicker } from "@/src/components/ui/DatePicker";
 import { Button } from "@/src/components/ui/Button";
 import { Icon } from "@/src/components/icons";
 import { generateId } from "@/src/utils/id";
 import {
-  ACCOUNT_NUMBER_PATTERN,
-  IFSC_PATTERN,
-  UPI_ID_PATTERN,
+  paymentFieldErrors,
+  saleTotals,
+  type PaymentField,
   type WizardState,
 } from "@/src/screens/Sales/wizard/types";
 import type { PaymentDetails, PaymentMethod } from "@/src/types";
@@ -23,20 +24,28 @@ import type { PaymentDetails, PaymentMethod } from "@/src/types";
 export function StepPayment({
   state,
   update,
+  showErrors,
 }: {
   state: WizardState;
   update: (patch: Partial<WizardState>) => void;
+  /** True once Save was pressed: show every problem, not just touched fields. */
+  showErrors?: boolean;
 }) {
-  const rate = Number(state.dailySellingRate) || 0;
-  const weight = Number(state.totalWeight) || 0;
-  const kolas = Number(state.kolaQuantity) || 0;
+  // Fields the user has left (blurred). Their errors show right away;
+  // untouched fields wait for Save so an empty form isn't covered in red.
+  const [touched, setTouched] = useState<Set<PaymentField>>(() => new Set());
+  const touch = (field: PaymentField) => () =>
+    setTouched((prev) => (prev.has(field) ? prev : new Set(prev).add(field)));
+  const allErrors = paymentFieldErrors(state);
+  const errorFor = (field: PaymentField) =>
+    showErrors || touched.has(field) ? allErrors[field] : undefined;
+
+  const { grossTotal } = saleTotals(state);
   const discount = Number(state.discount) || 0;
   const collected = Number(state.amountCollected) || 0;
 
-  const grossTotal = calcGrossTotal(state.rateBasis, rate, weight, kolas);
   const netPayable = calcNetPayable(grossTotal, discount);
   const balanceDue = calcBalanceDue(netPayable, collected);
-  const overCollected = collected > netPayable;
 
   const details = state.paymentDetails;
   const needsDetails = collected > 0;
@@ -46,22 +55,6 @@ export function StepPayment({
   ) {
     update({ paymentDetails: { ...details, [key]: value } });
   }
-  // Inline format hints — shown only once something has been typed.
-  const upiIdError =
-    details.upiId.trim() && !UPI_ID_PATTERN.test(details.upiId.trim())
-      ? "Enter a valid UPI ID, e.g. name@okaxis"
-      : undefined;
-  const accountError =
-    details.accountNumber.trim() &&
-    !ACCOUNT_NUMBER_PATTERN.test(details.accountNumber.replace(/\s+/g, ""))
-      ? "Should be 9–18 digits"
-      : undefined;
-  const ifscError =
-    details.ifscCode.trim() &&
-    !IFSC_PATTERN.test(details.ifscCode.trim().toUpperCase())
-      ? "Format: 4 letters, 0, then 6 characters (e.g. SBIN0001234)"
-      : undefined;
-
   function addCustomField() {
     update({
       customFields: [
@@ -90,7 +83,7 @@ export function StepPayment({
     <div className="space-y-5">
       <div className="space-y-5">
         <Input
-          label="Amount Collected"
+          label="Total Amount"
           required
           type="number"
           min={0}
@@ -100,8 +93,11 @@ export function StepPayment({
           placeholder="0"
           value={state.amountCollected}
           onChange={(e) => update({ amountCollected: e.target.value })}
+          onBlur={touch("amountCollected")}
+          // Over-collection is shown as soon as it happens, touched or not.
           error={
-            overCollected ? "Collected amount exceeds net payable" : undefined
+            errorFor("amountCollected") ??
+            (collected > netPayable ? allErrors.amountCollected : undefined)
           }
         />
         <Dropdown<PaymentMethod>
@@ -113,6 +109,12 @@ export function StepPayment({
             label: m.label,
           }))}
           onChange={(paymentMethod) => update({ paymentMethod })}
+          error={errorFor("paymentMethod")}
+          hint={
+            needsDetails && state.paymentMethod !== "cash"
+              ? "Fill in the payment details below"
+              : undefined
+          }
         />
       </div>
 
@@ -130,15 +132,22 @@ export function StepPayment({
               autoCapitalize="none"
               spellCheck={false}
               value={details.upiId}
-              error={upiIdError}
-              onChange={(e) => setDetail("upiId", e.target.value)}
+              error={errorFor("upiId")}
+              onBlur={touch("upiId")}
+              onChange={(e) => setDetail("upiId", e.target.value.trim())}
             />
             <Input
               label="UPI Transaction ID"
               placeholder="12-digit UPI ref no. (optional)"
               autoComplete="off"
+              inputMode="numeric"
+              maxLength={12}
               value={details.upiTransactionId}
-              onChange={(e) => setDetail("upiTransactionId", e.target.value)}
+              error={errorFor("upiTransactionId")}
+              onBlur={touch("upiTransactionId")}
+              onChange={(e) =>
+                setDetail("upiTransactionId", e.target.value.replace(/\D/g, ""))
+              }
             />
           </div>
         </div>
@@ -155,12 +164,16 @@ export function StepPayment({
               required={needsDetails}
               placeholder="e.g. State Bank of India"
               value={details.bankName}
+              error={errorFor("bankName")}
+              onBlur={touch("bankName")}
               onChange={(e) => setDetail("bankName", e.target.value)}
             />
             <Input
               label="Account Holder Name"
               placeholder="Name on the account"
               value={details.accountHolderName}
+              error={errorFor("accountHolderName")}
+              onBlur={touch("accountHolderName")}
               onChange={(e) => setDetail("accountHolderName", e.target.value)}
             />
             <Input
@@ -168,8 +181,10 @@ export function StepPayment({
               placeholder="9–18 digits"
               inputMode="numeric"
               autoComplete="off"
+              maxLength={22}
               value={details.accountNumber}
-              error={accountError}
+              error={errorFor("accountNumber")}
+              onBlur={touch("accountNumber")}
               onChange={(e) =>
                 setDetail(
                   "accountNumber",
@@ -184,9 +199,13 @@ export function StepPayment({
               maxLength={11}
               className="uppercase"
               value={details.ifscCode}
-              error={ifscError}
+              error={errorFor("ifscCode")}
+              onBlur={touch("ifscCode")}
               onChange={(e) =>
-                setDetail("ifscCode", e.target.value.toUpperCase())
+                setDetail(
+                  "ifscCode",
+                  e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+                )
               }
             />
             <Input
@@ -194,19 +213,29 @@ export function StepPayment({
               required={needsDetails}
               placeholder="Bank transaction reference"
               autoComplete="off"
+              maxLength={22}
+              className="uppercase"
               value={details.bankReference}
-              onChange={(e) => setDetail("bankReference", e.target.value)}
+              error={errorFor("bankReference")}
+              onBlur={touch("bankReference")}
+              onChange={(e) =>
+                setDetail(
+                  "bankReference",
+                  e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+                )
+              }
             />
           </div>
         </div>
       )}
 
-      <Input
+      <DatePicker
         label="Date"
-        type="date"
         hint="Defaults to today if left blank"
+        placeholder="Today"
+        clearable
         value={state.date}
-        onChange={(e) => update({ date: e.target.value })}
+        onChange={(v) => update({ date: v })}
       />
 
       <div
@@ -220,7 +249,7 @@ export function StepPayment({
           }`}
         >
           {balanceDue > 0
-            ? "Balance Due (added to vendor ledger)"
+            ? "Balance Due (added to customer ledger)"
             : "Fully Settled"}
         </span>
         <span

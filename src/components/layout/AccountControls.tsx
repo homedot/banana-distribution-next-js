@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/src/components/icons";
 import { Button } from "@/src/components/ui/Button";
 import { Modal } from "@/src/components/ui/Modal";
 import { cn } from "@/src/utils/cn";
+import { withLoading } from "@/src/store/loading";
+import { goToLogin } from "@/src/lib/auth-navigation";
 
-// One /api/auth/me request per page load, shared by every caller.
+// One /api/auth/me request per page load, shared by every caller. Login and
+// logout both do a full page load, so this never outlives the session it's for.
 let mePromise: Promise<string | null> | null = null;
 function fetchEmail() {
   mePromise ??= fetch("/api/auth/me")
@@ -48,7 +50,6 @@ export function LogoutButton({
   /** e.g. close the mobile sidebar drawer before showing the dialog. */
   onBeforeOpen?: () => void;
 }) {
-  const router = useRouter();
   const email = useCurrentUserEmail();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -60,19 +61,47 @@ export function LogoutButton({
     () => false
   );
 
+  // If this component is hidden (kept alive by Next.js between pages) or
+  // restored from the browser's back/forward cache, don't bring back an open
+  // dialog or a stuck "Logging out…".
+  useLayoutEffect(
+    () => () => {
+      setConfirming(false);
+      setBusy(false);
+      setError(null);
+    },
+    []
+  );
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (!e.persisted) return;
+      setConfirming(false);
+      setBusy(false);
+      setError(null);
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   async function logout() {
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
-      if (!res.ok) throw new Error();
-      mePromise = null;
-      router.push("/login");
-      router.refresh();
+      await withLoading("Logging out…", async () => {
+        const res = await fetch("/api/auth/logout", { method: "POST" });
+        if (!res.ok) throw new Error();
+      });
     } catch {
       setError("Couldn't log out. Check your connection and try again.");
       setBusy(false);
+      return;
     }
+    // A full page load (not router.push): it drops every kept-alive page and
+    // all business data held in memory, and replaces this history entry so
+    // Back can't reopen the dashboard. "Logging out…" stays until it leaves.
+    mePromise = null;
+    goToLogin();
   }
 
   return (

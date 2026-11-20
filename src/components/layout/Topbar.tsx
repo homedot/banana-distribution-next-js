@@ -10,8 +10,9 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Dashboard", subtitle: "Today's Sale snapshot" },
   "/distributions": { title: "Sales", subtitle: "Every dispatch, tracked end to end" },
   "/brokers": { title: "Brokers", subtitle: "Inward stock & procurement" },
-  "/vendors": { title: "Vendors", subtitle: "Shopkeeper ledgers & balances" },
-  "/payments": { title: "Payment Entry", subtitle: "Record vendor payments against pending balances" },
+  "/vendors": { title: "Customers", subtitle: "Shopkeeper ledgers & balances" },
+  "/payments": { title: "Payments", subtitle: "Record customer payments against pending balances" },
+  "/kola-categories": { title: "Kola Categories", subtitle: "Kaya types offered on New Sale" },
   "/reports": { title: "Reports", subtitle: "Performance across the business" },
 };
 

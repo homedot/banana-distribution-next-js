@@ -8,10 +8,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { AppData, Broker, BrokerBatch, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
+import type { AppData, Broker, BrokerBatch, KayaType, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
 import { api } from "@/src/lib/api";
+import { withLoading } from "@/src/store/loading";
 
-const emptyData: AppData = { brokers: [], batches: [], vendors: [], sales: [], payments: [] };
+const emptyData: AppData = { kayaTypes: [], brokers: [], batches: [], vendors: [], sales: [], payments: [] };
 
 interface DataContextValue {
   data: AppData;
@@ -27,10 +28,13 @@ interface DataContextValue {
   ) => Promise<Sale>;
   deleteSale: (id: string) => Promise<void>;
   addVendor: (input: Omit<Vendor, "id" | "createdAt">) => Promise<Vendor>;
+  updateVendor: (id: string, input: Omit<Vendor, "id" | "createdAt">) => Promise<Vendor>;
   addBroker: (input: Omit<Broker, "id" | "createdAt">) => Promise<Broker>;
   addBatch: (input: Omit<BrokerBatch, "id">) => Promise<BrokerBatch>;
   addPayment: (input: PaymentInput) => Promise<Payment>;
   deletePayment: (id: string) => Promise<void>;
+  addKayaType: (name: string) => Promise<KayaType>;
+  deleteKayaType: (id: string) => Promise<void>;
 }
 
 /** Replaces sales in state with the server's updated copies (matched by id). */
@@ -41,14 +45,15 @@ function mergeSales(current: Sale[], changed: Sale[]): Sale[] {
 }
 
 async function fetchAppData(): Promise<AppData> {
-  const [brokers, vendors, batches, sales, payments] = await Promise.all([
+  const [kayaTypes, brokers, vendors, batches, sales, payments] = await Promise.all([
+    api.kayaTypes.list(),
     api.brokers.list(),
     api.vendors.list(),
     api.batches.list(),
     api.sales.list(),
     api.payments.list(),
   ]);
-  return { brokers, vendors, batches, sales, payments };
+  return { kayaTypes, brokers, vendors, batches, sales, payments };
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -97,77 +102,135 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const addSale = useCallback<DataContextValue["addSale"]>(async (input) => {
-    const created = await api.sales.create(input);
-    setData((prev) => ({
-      ...prev,
-      sales: [created, ...prev.sales],
-    }));
-    return created;
-  }, []);
+  // Every write runs inside withLoading(), which shows the full-screen
+  // loading overlay until the server responds.
 
-  const updateSale = useCallback<DataContextValue["updateSale"]>(
-    async (id, input) => {
-      const updated = await api.sales.update(id, input);
-      setData((prev) => ({
-        ...prev,
-        sales: prev.sales.map((d) => (d.id === id ? updated : d)),
-      }));
-      return updated;
-    },
+  const addSale = useCallback<DataContextValue["addSale"]>(
+    (input) =>
+      withLoading("Saving sale…", async () => {
+        const created = await api.sales.create(input);
+        setData((prev) => ({ ...prev, sales: [created, ...prev.sales] }));
+        return created;
+      }),
     [],
   );
 
-  const deleteSale = useCallback<DataContextValue["deleteSale"]>(async (id) => {
-    await api.sales.remove(id);
-    setData((prev) => ({
-      ...prev,
-      sales: prev.sales.filter((d) => d.id !== id),
-    }));
-  }, []);
+  const updateSale = useCallback<DataContextValue["updateSale"]>(
+    (id, input) =>
+      withLoading("Updating sale…", async () => {
+        const updated = await api.sales.update(id, input);
+        setData((prev) => ({
+          ...prev,
+          sales: prev.sales.map((d) => (d.id === id ? updated : d)),
+        }));
+        return updated;
+      }),
+    [],
+  );
+
+  const deleteSale = useCallback<DataContextValue["deleteSale"]>(
+    (id) =>
+      withLoading("Deleting sale…", async () => {
+        await api.sales.remove(id);
+        setData((prev) => ({
+          ...prev,
+          sales: prev.sales.filter((d) => d.id !== id),
+        }));
+      }),
+    [],
+  );
 
   const addVendor = useCallback<DataContextValue["addVendor"]>(
-    async (input) => {
-      const created = await api.vendors.create(input);
-      setData((prev) => ({ ...prev, vendors: [...prev.vendors, created] }));
-      return created;
-    },
+    (input) =>
+      withLoading("Saving customer…", async () => {
+        const created = await api.vendors.create(input);
+        setData((prev) => ({ ...prev, vendors: [...prev.vendors, created] }));
+        return created;
+      }),
+    [],
+  );
+
+  const updateVendor = useCallback<DataContextValue["updateVendor"]>(
+    (id, input) =>
+      withLoading("Updating customer…", async () => {
+        const updated = await api.vendors.update(id, input);
+        setData((prev) => ({
+          ...prev,
+          vendors: prev.vendors.map((v) => (v.id === id ? updated : v)),
+        }));
+        return updated;
+      }),
     [],
   );
 
   const addBroker = useCallback<DataContextValue["addBroker"]>(
-    async (input) => {
-      const created = await api.brokers.create(input);
-      setData((prev) => ({ ...prev, brokers: [...prev.brokers, created] }));
-      return created;
-    },
+    (input) =>
+      withLoading("Saving broker…", async () => {
+        const created = await api.brokers.create(input);
+        setData((prev) => ({ ...prev, brokers: [...prev.brokers, created] }));
+        return created;
+      }),
     [],
   );
 
-  const addBatch = useCallback<DataContextValue["addBatch"]>(async (input) => {
-    const created = await api.batches.create(input);
-    setData((prev) => ({ ...prev, batches: [created, ...prev.batches] }));
-    return created;
-  }, []);
+  const addBatch = useCallback<DataContextValue["addBatch"]>(
+    (input) =>
+      withLoading("Saving stock entry…", async () => {
+        const created = await api.batches.create(input);
+        setData((prev) => ({ ...prev, batches: [created, ...prev.batches] }));
+        return created;
+      }),
+    [],
+  );
 
-  const addPayment = useCallback<DataContextValue["addPayment"]>(async (input) => {
-    const { payment, sales } = await api.payments.create(input);
-    setData((prev) => ({
-      ...prev,
-      payments: [payment, ...prev.payments],
-      sales: mergeSales(prev.sales, sales),
-    }));
-    return payment;
-  }, []);
+  const addPayment = useCallback<DataContextValue["addPayment"]>(
+    (input) =>
+      withLoading("Saving payment…", async () => {
+        const { payment, sales } = await api.payments.create(input);
+        setData((prev) => ({
+          ...prev,
+          payments: [payment, ...prev.payments],
+          sales: mergeSales(prev.sales, sales),
+        }));
+        return payment;
+      }),
+    [],
+  );
 
-  const deletePayment = useCallback<DataContextValue["deletePayment"]>(async (id) => {
-    const { sales } = await api.payments.remove(id);
-    setData((prev) => ({
-      ...prev,
-      payments: prev.payments.filter((p) => p.id !== id),
-      sales: mergeSales(prev.sales, sales),
-    }));
-  }, []);
+  const deletePayment = useCallback<DataContextValue["deletePayment"]>(
+    (id) =>
+      withLoading("Deleting payment…", async () => {
+        const { sales } = await api.payments.remove(id);
+        setData((prev) => ({
+          ...prev,
+          payments: prev.payments.filter((p) => p.id !== id),
+          sales: mergeSales(prev.sales, sales),
+        }));
+      }),
+    [],
+  );
+
+  const addKayaType = useCallback<DataContextValue["addKayaType"]>(
+    (name) =>
+      withLoading("Saving kola category…", async () => {
+        const created = await api.kayaTypes.create(name);
+        setData((prev) => ({ ...prev, kayaTypes: [...prev.kayaTypes, created] }));
+        return created;
+      }),
+    [],
+  );
+
+  const deleteKayaType = useCallback<DataContextValue["deleteKayaType"]>(
+    (id) =>
+      withLoading("Removing kola category…", async () => {
+        await api.kayaTypes.remove(id);
+        setData((prev) => ({
+          ...prev,
+          kayaTypes: prev.kayaTypes.filter((k) => k.id !== id),
+        }));
+      }),
+    [],
+  );
 
   const value = useMemo<DataContextValue>(
     () => ({
@@ -179,10 +242,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       updateSale,
       deleteSale,
       addVendor,
+      updateVendor,
       addBroker,
       addBatch,
       addPayment,
       deletePayment,
+      addKayaType,
+      deleteKayaType,
     }),
     [
       data,
@@ -193,10 +259,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       updateSale,
       deleteSale,
       addVendor,
+      updateVendor,
       addBroker,
       addBatch,
       addPayment,
       deletePayment,
+      addKayaType,
+      deleteKayaType,
     ],
   );
 

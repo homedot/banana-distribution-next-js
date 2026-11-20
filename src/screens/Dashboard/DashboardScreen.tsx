@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { useAppData } from "@/src/store/data-context";
 import {
   saleRefs,
-  getBrokerSummaries,
   getDashboardStats,
   getVendorSummaries,
   sortedSales,
@@ -18,7 +17,7 @@ import { Button } from "@/src/components/ui/Button";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { PaymentStatusBadge } from "@/src/components/domain/PaymentStatusBadge";
-import { AreaChart } from "@/src/components/charts/AreaChart";
+import { ColumnChart } from "@/src/components/charts/ColumnChart";
 import { Colors } from "@/src/utils/colors";
 import { DonutChart } from "@/src/components/charts/DonutChart";
 import { formatCurrency, formatNumber, initials } from "@/src/utils/format";
@@ -54,45 +53,50 @@ export function DashboardScreen() {
 
   const stats = useMemo(() => getDashboardStats({ ...data, sales }), [data, sales]);
   const recent = useMemo(() => sortedSales({ ...data, sales }).slice(0, 6), [data, sales]);
-  const brokerSummaries = useMemo(() => getBrokerSummaries(data), [data]);
   const vendorSummaries = useMemo(() => getVendorSummaries(data), [data]);
 
   const chart = useMemo(() => {
     const keyed = data.sales
       .map((d) => ({ d, key: toDayKey(d.date) }))
       .filter((x): x is { d: Sale; key: string } => x.key !== null);
-    const buckets = chartBuckets(
+    const { grain, buckets } = chartBuckets(
       period,
       anchor,
       keyed.map((x) => x.key),
     );
     const sums = buckets.map((b) => {
-      const cur = { weight: 0, billed: 0, collected: 0 };
+      const cur = { weight: 0, billed: 0, pending: 0 };
       for (const { d, key } of keyed) {
         if (key < b.start || key > b.end) continue;
         cur.weight += num(d.totalWeight);
         cur.billed += num(d.netPayable);
-        cur.collected += num(d.amountCollected);
+        // Pending = what's still owed now (after later payments), so
+        // Collected + Pending always adds up to Billed.
+        cur.pending += num(d.balanceDue);
       }
       return cur;
     });
     return {
+      grain,
       labels: buckets.map((b) => b.label),
       weight: sums.map((v) => Math.round(v.weight)),
       billed: sums.map((v) => Math.round(v.billed)),
-      collected: sums.map((v) => Math.round(v.collected)),
+      pending: sums.map((v) => Math.round(Math.min(v.pending, v.billed))),
+      collected: sums.map((v) => Math.round(Math.max(0, v.billed - v.pending))),
     };
   }, [data.sales, period, anchor]);
 
+  const grainWord = { day: "Day", week: "Week", month: "Month" }[chart.grain];
   const chartSubtitle =
-    period === "all"
-      ? "Month by month"
-      : period === "day"
-        ? `7 days up to ${periodLabel("day", anchor)}`
-        : `Day by day · ${periodLabel(period, anchor)}`;
+    period === "day"
+      ? `By day · 7 days up to ${periodLabel("day", anchor)}`
+      : period === "all"
+        ? `By ${grainWord.toLowerCase()} · all time`
+        : `By day · ${periodLabel(period, anchor)}`;
   const chartWeight = chart.weight.reduce((a, b) => a + b, 0);
   const chartBilled = chart.billed.reduce((a, b) => a + b, 0);
   const chartCollected = chart.collected.reduce((a, b) => a + b, 0);
+  const chartPending = chart.pending.reduce((a, b) => a + b, 0);
 
   const kayaBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -128,7 +132,7 @@ export function DashboardScreen() {
           value={formatNumber(stats.totalSales)}
           icon={<Icon.Truck className="h-5 w-5" />}
           tone="forest"
-          trend={`${stats.activeVendors} vendors`}
+          trend={`${stats.activeVendors} customers`}
           trendTone="neutral"
         />
         <StatCard
@@ -174,17 +178,17 @@ export function DashboardScreen() {
                 {formatNumber(chartWeight)}{" "}
                 <span className="text-[13px] font-semibold text-sand-500">kg</span>
               </p>
-              <Badge tone="banana">{period === "all" ? "kg / month" : "kg / day"}</Badge>
+              <Badge tone="banana">kg per {grainWord.toLowerCase()}</Badge>
             </div>
           </CardHeader>
           <CardBody>
-            <AreaChart
+            <ColumnChart
               labels={chart.labels}
               series={[
                 {
                   key: "weight",
                   label: "Weight",
-                  color: Colors.banana[600],
+                  color: Colors.banana[500],
                   values: chart.weight,
                 },
               ]}
@@ -198,34 +202,44 @@ export function DashboardScreen() {
         <Card>
           <CardHeader className="items-start">
             <div>
-              <CardTitle>Billed vs Collected</CardTitle>
+              <CardTitle>Collected vs Pending</CardTitle>
               <p className="mt-0.5 text-[12px] text-sand-500">{chartSubtitle}</p>
             </div>
             <div className="text-right">
               <p className="text-[20px] font-extrabold leading-tight text-sand-900">
                 {formatCurrency(chartCollected)}
               </p>
-              <p className="text-[12px] text-sand-500">of {formatCurrency(chartBilled)} billed</p>
+              <p className="text-[12px] text-sand-500">
+                collected of {formatCurrency(chartBilled)} billed
+                {chartPending > 0 && (
+                  <>
+                    {" · "}
+                    <span className="font-semibold text-red-600">
+                      {formatCurrency(chartPending)} pending
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
           </CardHeader>
           <CardBody>
-            <AreaChart
+            <ColumnChart
               labels={chart.labels}
               series={[
-                {
-                  key: "billed",
-                  label: "Billed",
-                  color: Colors.banana[600],
-                  values: chart.billed,
-                },
                 {
                   key: "collected",
                   label: "Collected",
                   color: Colors.forest[600],
                   values: chart.collected,
                 },
+                {
+                  key: "pending",
+                  label: "Pending",
+                  color: "#EF4444",
+                  values: chart.pending,
+                },
               ]}
-              height={216}
+              totalLabel="Billed"
               loading={loading}
               valueFormatter={(v) => formatCurrency(v)}
               axisFormatter={(v) => "₹" + formatCompact(v)}
@@ -278,7 +292,7 @@ export function DashboardScreen() {
                           </span>
                           <div>
                             <p className="text-[13.5px] font-semibold text-sand-900">
-                              {vendor?.name ?? "Unknown vendor"}
+                              {vendor?.name ?? "Unknown customer"}
                             </p>
                             <p className="text-[11.5px] text-sand-500">
                               {d.kayaType} · {formatNumber(d.kolaQuantity)} kolas
@@ -317,7 +331,7 @@ export function DashboardScreen() {
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Vendors to Follow Up</CardTitle>
+                <CardTitle>Customers to Follow Up</CardTitle>
                 <p className="mt-0.5 text-[12px] text-sand-500">Current balances · all time</p>
               </div>
             </CardHeader>
@@ -326,7 +340,7 @@ export function DashboardScreen() {
                 <EmptyState
                   icon={<Icon.Check className="h-6 w-6" />}
                   title="All settled"
-                  description="No pending vendor balances right now."
+                  description="No pending customer balances right now."
                 />
               ) : (
                 <ul className="space-y-3.5">
@@ -358,62 +372,6 @@ export function DashboardScreen() {
           </Card>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>Broker Consignment Overview</CardTitle>
-            <p className="mt-0.5 text-[12px] text-sand-500">All time</p>
-          </div>
-          <Link href="/brokers">
-            <Button variant="ghost" size="sm">
-              Manage brokers <Icon.ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardBody className="overflow-x-auto pt-3">
-          <table className="w-full min-w-[640px] text-left text-[13px]">
-            <thead>
-              <tr className="text-[11px] uppercase tracking-wide text-sand-400">
-                <th className="pb-2 font-semibold">Broker</th>
-                <th className="pb-2 font-semibold">Kaya Type</th>
-                <th className="pb-2 font-semibold text-right">Inward</th>
-                <th className="pb-2 font-semibold text-right">Dispatched</th>
-                <th className="pb-2 font-semibold text-right">Remaining</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-sand-100">
-              {brokerSummaries.map((s) => (
-                <tr key={s.broker.id}>
-                  <td className="py-2.5">
-                    <Link
-                      href={`/brokers/${s.broker.id}`}
-                      className="font-semibold text-forest-700 hover:underline"
-                    >
-                      {s.broker.name}
-                    </Link>
-                    <p className="text-[11.5px] text-sand-400">{s.broker.location}</p>
-                  </td>
-                  <td className="py-2.5 text-sand-600">{s.batches[0]?.batch.kayaType ?? "—"}</td>
-                  <td className="py-2.5 text-right font-medium text-sand-700">
-                    {formatNumber(s.inwardKolas)}
-                  </td>
-                  <td className="py-2.5 text-right font-medium text-sand-700">
-                    {formatNumber(s.dispatchedKolas)}
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <Badge tone={s.remainingKolas === 0 ? "neutral" : "banana"}>
-                      {s.remainingKolas === 0
-                        ? "Closed"
-                        : `${formatNumber(s.remainingKolas)} kolas`}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardBody>
-      </Card>
     </div>
   );
 }

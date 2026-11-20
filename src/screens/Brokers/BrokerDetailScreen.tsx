@@ -158,7 +158,7 @@ export function BrokerDetailScreen({ id }: { id: string }) {
                         <thead>
                           <tr className="border-b border-sand-100 text-[11px] uppercase tracking-wide text-sand-400">
                             <th className="py-2 font-semibold">
-                              Vendor / Shop
+                              Customer / Shop
                             </th>
                             <th className="py-2 font-semibold text-right">
                               Kola

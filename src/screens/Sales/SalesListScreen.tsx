@@ -16,6 +16,15 @@ import { Icon } from "@/src/components/icons";
 import { Button } from "@/src/components/ui/Button";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PaymentStatusBadge } from "@/src/components/domain/PaymentStatusBadge";
+import { DateRangeFilter } from "@/src/components/domain/DateRangeFilter";
+import {
+  ALL_TIME,
+  inRange,
+  isAllTime,
+  rangePhrase,
+  toDayKey,
+  type PeriodRange,
+} from "@/src/utils/period";
 import type { PaymentStatus } from "@/src/types";
 
 const FILTERS: { value: "all" | PaymentStatus; label: string }[] = [
@@ -29,21 +38,35 @@ export function SalesListScreen() {
   const { data } = useAppData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | PaymentStatus>("all");
+  // The applied From → To range (all time until the user presses Apply).
+  const [range, setRange] = useState<PeriodRange>(ALL_TIME);
+  const dateFiltered = !isAllTime(range);
+  const phrase = rangePhrase(range);
 
   const list = useMemo(() => {
     const all = sortedSales(data);
     const q = query.trim().toLowerCase();
     return all.filter((d) => {
-      const { vendor, broker } = saleRefs(data, d);
+      const { vendor } = saleRefs(data, d);
+      if (!inRange(toDayKey(d.date), range)) return false;
       if (filter !== "all" && paymentStatus(d) !== filter) return false;
       if (!q) return true;
       return (
         vendor?.name.toLowerCase().includes(q) ||
-        broker?.name.toLowerCase().includes(q) ||
         d.kayaType.toLowerCase().includes(q)
       );
     });
-  }, [data, query, filter]);
+  }, [data, query, filter, range]);
+
+  const totals = list.reduce(
+    (t, d) => ({
+      billed: t.billed + d.netPayable,
+      collected: t.collected + d.amountCollected,
+      pending: t.pending + d.balanceDue,
+      kolas: t.kolas + d.kolaQuantity,
+    }),
+    { billed: 0, collected: 0, pending: 0, kolas: 0 },
+  );
 
   return (
     <div className="space-y-5">
@@ -53,7 +76,7 @@ export function SalesListScreen() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search vendor, broker, kaya type…"
+            placeholder="Search customer or kaya type…"
             className="h-11 w-full rounded-xl border border-sand-200 bg-white pl-10 pr-3.5 text-[14px] outline-none transition focus:border-forest-400 focus:ring-4 focus:ring-forest-100"
           />
         </div>
@@ -74,13 +97,37 @@ export function SalesListScreen() {
               </button>
             ))}
           </div>
-          <Link href="/distributions/new">
-            <Button size="md">
-              <Icon.Plus className="h-4 w-4" /> New
-            </Button>
-          </Link>
         </div>
       </div>
+
+      <DateRangeFilter value={range} onApply={setRange} />
+
+      {dateFiltered && list.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-sand-200/80 bg-white px-5 py-4 shadow-soft">
+            <p className="text-[15px] font-bold text-sand-600">Sales {phrase}</p>
+            <p className="mt-1 text-[26px] font-extrabold text-sand-900">
+              {formatCurrency(totals.billed)}
+            </p>
+            <p className="text-[14px] font-semibold text-sand-500">
+              {list.length} {list.length === 1 ? "sale" : "sales"} ·{" "}
+              {formatNumber(totals.kolas)} kolas
+            </p>
+          </div>
+          <div className="rounded-2xl bg-emerald-50 px-5 py-4">
+            <p className="text-[15px] font-bold text-emerald-800">Collected</p>
+            <p className="mt-1 text-[26px] font-extrabold text-emerald-700">
+              {formatCurrency(totals.collected)}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-red-50 px-5 py-4">
+            <p className="text-[15px] font-bold text-red-800">Pending</p>
+            <p className="mt-1 text-[26px] font-extrabold text-red-700">
+              {formatCurrency(totals.pending)}
+            </p>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardBody className="p-0">
@@ -88,8 +135,16 @@ export function SalesListScreen() {
             <div className="p-5">
               <EmptyState
                 icon={<Icon.Truck className="h-6 w-6" />}
-                title="No Sales found"
-                description="Try a different search, or create a new dispatch."
+                title={
+                  dateFiltered && !query && filter === "all"
+                    ? `No sales ${phrase}`
+                    : "No Sales found"
+                }
+                description={
+                  dateFiltered
+                    ? "Nothing matches in this period. Try other dates, or press Clear to see all."
+                    : "Try a different search, or create a new dispatch."
+                }
                 action={
                   <Link href="/distributions/new">
                     <Button size="sm">
@@ -104,8 +159,8 @@ export function SalesListScreen() {
               <table className="w-full min-w-[760px] text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-sand-100 text-[11px] uppercase tracking-wide text-sand-400">
-                    <th className="px-5 py-3 font-semibold">Vendor</th>
-                    <th className="px-3 py-3 font-semibold">Broker / Kaya</th>
+                    <th className="px-5 py-3 font-semibold">Customer</th>
+                    <th className="px-3 py-3 font-semibold">Kaya</th>
                     <th className="px-3 py-3 font-semibold text-right">Qty</th>
                     <th className="px-3 py-3 font-semibold text-right">
                       Net Payable
@@ -120,7 +175,7 @@ export function SalesListScreen() {
                 </thead>
                 <tbody className="divide-y divide-sand-100">
                   {list.map((d) => {
-                    const { vendor, broker } = saleRefs(data, d);
+                    const { vendor } = saleRefs(data, d);
                     return (
                       <tr key={d.id} className="transition hover:bg-sand-50/70">
                         <td className="px-5 py-3">
@@ -133,13 +188,8 @@ export function SalesListScreen() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-sand-600">
-                          <p className="font-medium text-sand-700">
-                            {broker?.name ?? "—"}
-                          </p>
-                          <p className="text-[11.5px] text-sand-400">
-                            {d.kayaType}
-                          </p>
+                        <td className="px-3 py-3 font-medium text-sand-700">
+                          {d.kayaType || "—"}
                         </td>
                         <td className="px-3 py-3 text-right font-medium text-sand-700">
                           {formatNumber(d.kolaQuantity)} kolas

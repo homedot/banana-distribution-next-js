@@ -9,6 +9,7 @@ import { formatCurrency, formatDate, initials } from "@/src/utils/format";
 import { cn } from "@/src/utils/cn";
 import { Card, CardBody, CardHeader, CardTitle } from "@/src/components/ui/Card";
 import { Input, Textarea } from "@/src/components/ui/Field";
+import { DatePicker } from "@/src/components/ui/DatePicker";
 import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -112,8 +113,8 @@ export function PaymentEntryScreen() {
 
   function validate() {
     const next: typeof errors = {};
-    if (!form.vendorId) next.vendor = "Select a vendor";
-    else if (outstanding <= 0) next.vendor = "This vendor has no pending balance";
+    if (!form.vendorId) next.vendor = "Select a customer";
+    else if (outstanding <= 0) next.vendor = "This customer has no pending balance";
     if (amount <= 0) next.amount = "Enter an amount greater than zero";
     else if (outstanding > 0 && amount > outstanding)
       next.amount = `Cannot exceed the pending balance of ${formatCurrency(outstanding)}`;
@@ -136,7 +137,7 @@ export function PaymentEntryScreen() {
         reference: form.reference.trim(),
         notes: form.notes.trim(),
       });
-      const vendorName = vendorById.get(payment.vendorId)?.name ?? "vendor";
+      const vendorName = vendorById.get(payment.vendorId)?.name ?? "customer";
       setSavedMsg(`${formatCurrency(payment.amount)} recorded for ${vendorName}.`);
       setForm({ ...emptyForm, date: form.date, method: form.method });
       setErrors({});
@@ -267,14 +268,13 @@ export function PaymentEntryScreen() {
                     </button>
                   )}
                 </div>
-                <Input
+                <DatePicker
                   label="Payment Date"
                   required
-                  type="date"
                   max={today || undefined}
                   value={paymentDate}
                   error={errors.date}
-                  onChange={(e) => update("date", e.target.value)}
+                  onChange={(v) => update("date", v)}
                 />
               </div>
 
@@ -349,14 +349,14 @@ export function PaymentEntryScreen() {
             {!form.vendorId ? (
               <EmptyState
                 icon={<Icon.Store className="h-6 w-6" />}
-                title="Select a vendor"
+                title="Select a customer"
                 description="Their unpaid sales will appear here, showing how the payment is applied."
               />
             ) : pendingSales.length === 0 ? (
               <EmptyState
                 icon={<Icon.Check className="h-6 w-6" />}
                 title="All settled"
-                description="This vendor has no unpaid sales."
+                description="This customer has no unpaid sales."
               />
             ) : (
               <ul className="divide-y divide-sand-100">
@@ -422,7 +422,7 @@ export function PaymentEntryScreen() {
                 <thead>
                   <tr className="border-b border-sand-100 text-[11px] uppercase tracking-wide text-sand-400">
                     <th className="px-5 py-3 font-semibold">Date</th>
-                    <th className="px-3 py-3 font-semibold">Vendor</th>
+                    <th className="px-3 py-3 font-semibold">Customer</th>
                     <th className="px-3 py-3 font-semibold">Method</th>
                     <th className="px-3 py-3 font-semibold">Reference</th>
                     <th className="px-3 py-3 font-semibold">Applied To</th>
@@ -442,7 +442,7 @@ export function PaymentEntryScreen() {
                               {initials(vendor?.name ?? "?")}
                             </span>
                             <span className="font-semibold text-sand-900">
-                              {vendor?.name ?? "Deleted vendor"}
+                              {vendor?.name ?? "Deleted customer"}
                             </span>
                           </div>
                         </td>
@@ -488,7 +488,7 @@ export function PaymentEntryScreen() {
           <p className="text-[13.5px] text-sand-600">
             {formatCurrency(paymentToDelete.amount)} from{" "}
             <span className="font-semibold text-sand-900">
-              {vendorById.get(paymentToDelete.vendorId)?.name ?? "this vendor"}
+              {vendorById.get(paymentToDelete.vendorId)?.name ?? "this customer"}
             </span>{" "}
             will be removed, and the amount will be added back to the pending balance of the{" "}
             {paymentToDelete.allocations.length} sale

@@ -65,6 +65,7 @@ export function SaleDetailScreen({ id }: { id: string }) {
   }
 
   const { vendor, batch, broker } = saleRefs(data, sale);
+  const unit = sale.rateBasis === "per_kola" ? "/ kola" : "/ kg";
   const methodLabel = PAYMENT_METHODS.find(
     (m) => m.value === sale.paymentMethod,
   )?.label;
@@ -98,7 +99,7 @@ export function SaleDetailScreen({ id }: { id: string }) {
             </span>
             <div>
               <h2 className="text-[20px] font-extrabold text-sand-900">
-                {vendor?.name ?? "Unknown vendor"}
+                {vendor?.name ?? "Unknown customer"}
               </h2>
               <p className="text-[12.5px] text-sand-500">
                 {sale.kayaType} · {formatDate(sale.date)}
@@ -129,7 +130,7 @@ export function SaleDetailScreen({ id }: { id: string }) {
             </CardHeader>
             <CardBody className="pt-2">
               <DetailRow
-                label="Shopkeeper / Vendor"
+                label="Shopkeeper / Customer"
                 value={vendor?.name ?? "—"}
               />
               {broker && (
@@ -146,8 +147,22 @@ export function SaleDetailScreen({ id }: { id: string }) {
                 label="Quality Category"
                 value={sale.qualityCategory}
               />
+              {(sale.kayaItems?.length ?? 0) > 1 &&
+                sale.kayaItems!.map((item) => (
+                  <DetailRow
+                    key={item.kayaType}
+                    label={item.kayaType}
+                    value={[
+                      `${formatNumber(item.kolaQuantity)} kolas`,
+                      item.totalWeight !== undefined && `${formatNumber(item.totalWeight, 2)} kg`,
+                      item.qualityCategory ?? sale.qualityCategory,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                ))}
               <DetailRow
-                label="Kola Quantity"
+                label={(sale.kayaItems?.length ?? 0) > 1 ? "Total Kola Quantity" : "Kola Quantity"}
                 value={`${formatNumber(sale.kolaQuantity)} kolas`}
               />
               <DetailRow
@@ -198,12 +213,20 @@ export function SaleDetailScreen({ id }: { id: string }) {
               <CardTitle>Payment Summary</CardTitle>
             </CardHeader>
             <CardBody className="pt-2">
-              <DetailRow
-                label="Daily Selling Rate"
-                value={`${formatCurrency(sale.dailySellingRate)} ${
-                  sale.rateBasis === "per_kola" ? "/ kola" : "/ kg"
-                }`}
-              />
+              {sale.kayaItems?.some((i) => i.sellingRate !== undefined) ? (
+                sale.kayaItems.map((item) => (
+                  <DetailRow
+                    key={item.kayaType}
+                    label={`${item.kayaType} rate`}
+                    value={`${formatCurrency(item.sellingRate ?? sale.dailySellingRate)} ${unit}`}
+                  />
+                ))
+              ) : (
+                <DetailRow
+                  label="Daily Selling Rate"
+                  value={`${formatCurrency(sale.dailySellingRate)} ${unit}`}
+                />
+              )}
               <DetailRow
                 label="Gross Total"
                 value={formatCurrency(sale.grossTotal)}
@@ -328,7 +351,7 @@ export function SaleDetailScreen({ id }: { id: string }) {
           {vendor && (
             <Card>
               <CardHeader>
-                <CardTitle>Vendor Contact</CardTitle>
+                <CardTitle>Customer Contact</CardTitle>
               </CardHeader>
               <CardBody className="pt-2">
                 <DetailRow
@@ -341,7 +364,7 @@ export function SaleDetailScreen({ id }: { id: string }) {
                   href={`/vendors/${vendor.id}`}
                   className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-sand-200 py-2 text-[12.5px] font-semibold text-forest-700 hover:bg-forest-50"
                 >
-                  View vendor ledger{" "}
+                  View customer ledger{" "}
                   <Icon.ChevronRight className="h-3.5 w-3.5" />
                 </Link>
               </CardBody>

@@ -85,3 +85,105 @@ body {
   background: var(--color-banana-200);
   color: var(--color-sand-900);
 }
+
+/* ── Full-screen loading overlay (src/components/ui/LoadingOverlay.tsx) ── */
+@keyframes loading-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes loading-pop {
+  0% { opacity: 0; transform: translateY(18px) scale(0.9); }
+  60% { opacity: 1; transform: translateY(-3px) scale(1.02); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+@keyframes loading-orbit {
+  from { transform: rotate(var(--start, 0deg)); }
+  to { transform: rotate(calc(var(--start, 0deg) + 360deg)); }
+}
+@keyframes loading-bounce {
+  0%, 100% { transform: translateY(0) rotate(-5deg) scale(1); }
+  45% { transform: translateY(-10px) rotate(5deg) scale(1.04); }
+  55% { transform: translateY(-10px) rotate(5deg) scale(1.04); }
+}
+@keyframes loading-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.9; }
+  50% { transform: scaleX(0.6); opacity: 0.4; }
+}
+@keyframes loading-ripple {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@keyframes loading-glow {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.55; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
+}
+@keyframes loading-float {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  12% { opacity: 0.55; }
+  50% { transform: translate(var(--drift, 20px), -55vh) rotate(180deg); }
+  88% { opacity: 0.45; }
+  100% { transform: translate(0, -115vh) rotate(360deg); opacity: 0; }
+}
+@keyframes loading-shimmer { to { background-position: -200% 0; } }
+@keyframes loading-bar {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(260%); }
+}
+@keyframes loading-sheen {
+  0%, 60% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+
+.loading-overlay { animation: loading-fade 200ms ease-out both; }
+.loading-glow {
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.45) 0%, rgba(245, 166, 35, 0) 65%);
+  animation: loading-glow 2.4s ease-in-out infinite;
+}
+.loading-particle { animation: loading-float 8s linear infinite both; }
+.loading-card { animation: loading-pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
+.loading-card-sheen {
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(254, 243, 199, 0.55), transparent);
+  animation: loading-sheen 2.8s ease-in-out infinite;
+}
+.loading-ring {
+  background: conic-gradient(
+    from 0deg,
+    var(--color-banana-500),
+    var(--color-banana-300),
+    var(--color-forest-500),
+    var(--color-forest-700),
+    transparent 75%,
+    var(--color-banana-500)
+  );
+  animation: loading-spin 1.1s linear infinite;
+}
+.loading-orbit { animation: loading-orbit 2.6s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite; }
+.loading-ripple { animation: loading-ripple 1.8s ease-out infinite; }
+.loading-bounce { animation: loading-bounce 1.2s ease-in-out infinite; }
+.loading-shadow { animation: loading-shadow 1.2s ease-in-out infinite; }
+.loading-text {
+  background: linear-gradient(
+    90deg,
+    var(--color-sand-900) 0%,
+    var(--color-sand-900) 35%,
+    var(--color-banana-600) 50%,
+    var(--color-sand-900) 65%,
+    var(--color-sand-900) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: loading-shimmer 2s linear infinite;
+}
+.loading-bar {
+  background: linear-gradient(90deg, var(--color-banana-400), var(--color-forest-600));
+  animation: loading-bar 1.3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-ring { animation-duration: 3s; }
+  .loading-particle, .loading-orbit, .loading-ripple, .loading-bounce,
+  .loading-shadow, .loading-card, .loading-card-sheen, .loading-glow,
+  .loading-text, .loading-bar { animation: none; }
+  .loading-particle, .loading-card-sheen { display: none; }
+}

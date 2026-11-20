@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/backend/utils/jwt";
+import { safeNextPath } from "@/src/lib/auth-navigation";
 
 // Public pages that don't require a session.
 const PUBLIC_PATHS = ["/login"];
@@ -34,12 +35,16 @@ export function proxy(request: NextRequest) {
   const isPublicPage = PUBLIC_PATHS.includes(pathname);
 
   if (isPublicPage) {
-    if (authed) return NextResponse.redirect(new URL("/", request.url));
+    if (authed) return NextResponse.redirect(new URL(safeNextPath(request.nextUrl.searchParams.get("next")), request.url));
     return NextResponse.next();
   }
 
   if (!authed) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Remember the page they asked for, so signing in brings them back to it.
+    const loginUrl = new URL("/login", request.url);
+    const next = pathname + request.nextUrl.search;
+    if (next !== "/") loginUrl.searchParams.set("next", next);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

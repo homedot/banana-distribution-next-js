@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Merriweather, Noto_Sans_Malayalam, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { LoadingOverlay } from "@/src/components/ui/LoadingOverlay";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -26,13 +27,16 @@ const malayalam = Noto_Sans_Malayalam({
 export const metadata: Metadata = {
   title: "St. Mary's Banana Sale",
   description:
-    "Banana Sale Management System — procurement, dispatch and vendor ledgers for St. Mary's Banana Sale.",
+    "Banana Sale Management System — procurement, dispatch and customer ledgers for St. Mary's Banana Sale.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${jakarta.variable} ${malayalam.variable} ${brand.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans">{children}</body>
+      <body className="min-h-full font-sans">
+        {children}
+        <LoadingOverlay />
+      </body>
     </html>
   );
 }

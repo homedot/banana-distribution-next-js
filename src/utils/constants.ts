@@ -1,12 +1,7 @@
 import type { PaymentMethod, QualityCategory } from "@/src/types";
 
-export const KAYA_TYPES = [
-  "ഏത്തൻ", // Ethan (Nendran)
-  "ഞാലി", // Njali
-  "റോബസ്റ്റ", // Robusta
-  "ചെറുകായ", // Cherukaya
-  "പൂവൻ", // Poovan
-] as const;
+// Kaya types (kola categories) now live in the database — see the Kola
+// Categories screen and backend/services/kayaType.service.ts.
 
 export const QUALITY_CATEGORIES: QualityCategory[] = [
   "Grade A",
@@ -25,8 +20,9 @@ export const SERVICE_AREAS = ["Ernakulam", "Thrissur"] as const;
 export const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: "grid" },
   { href: "/distributions", label: "Sales", icon: "truck" },
-  { href: "/vendors", label: "Vendors", icon: "store" },
-  { href: "/payments", label: "Payment Entry", icon: "wallet" },
+  { href: "/vendors", label: "Customers", icon: "store" },
+  { href: "/payments", label: "Payments", icon: "wallet" },
+  { href: "/kola-categories", label: "Kola Categories", icon: "banana" },
   // Hidden from navigation for now — pages remain reachable directly.
   // { href: "/brokers", label: "Brokers", icon: "package" },
   // { href: "/reports", label: "Reports", icon: "chart" },

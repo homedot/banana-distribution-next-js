@@ -28,8 +28,17 @@ export function saleRefs(data: AppData, sale: Sale) {
   return { batch, broker, vendor };
 }
 
+/**
+ * Latest created first. Sorting by `createdAt` (not the sale date) keeps a
+ * just-saved sale at the top even when it's back-dated, and editing a sale's
+ * date doesn't move it around. Ties fall back to the sale date.
+ */
 export function sortedSales(data: AppData): Sale[] {
-  return [...data.sales].sort((a, b) => b.date.localeCompare(a.date));
+  return [...data.sales].sort(
+    (a, b) =>
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? "") ||
+      b.date.localeCompare(a.date),
+  );
 }
 
 export interface DashboardStats {

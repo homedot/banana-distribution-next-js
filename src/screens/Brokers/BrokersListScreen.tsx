@@ -23,7 +23,7 @@ export function BrokersListScreen() {
       <div className="flex items-center justify-between">
         <p className="text-[13px] text-sand-500">
           {summaries.length} broker{summaries.length === 1 ? "" : "s"} · inward
-          stock &amp; vendor dispatch in one place
+          stock &amp; customer dispatch in one place
         </p>
         <Button onClick={() => setOpen(true)}>
           <Icon.Plus className="h-4 w-4" /> Record Inward Stock

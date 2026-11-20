@@ -180,7 +180,7 @@ export function ReportsScreen() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Vendors by Value</CardTitle>
+            <CardTitle>Top Customers by Value</CardTitle>
           </CardHeader>
           <CardBody className="pt-2">
             <ul className="space-y-3">

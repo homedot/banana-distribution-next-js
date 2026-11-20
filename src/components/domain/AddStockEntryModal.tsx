@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useAppData } from "@/src/store/data-context";
 import { Modal } from "@/src/components/ui/Modal";
 import { Input, Select } from "@/src/components/ui/Field";
+import { DatePicker } from "@/src/components/ui/DatePicker";
 import { Button } from "@/src/components/ui/Button";
 import { Icon } from "@/src/components/icons";
-import { KAYA_TYPES } from "@/src/utils/constants";
 import type { BrokerBatch } from "@/src/types";
 
 function todayISO() {
@@ -21,7 +21,8 @@ const emptyForm = {
   newBrokerLocation: "",
   newBrokerVehicle: "",
   newBrokerPhone: "",
-  kayaType: KAYA_TYPES[0] as string,
+  // Empty means "the first kola category" (the list loads from the server).
+  kayaType: "",
   inwardQtyKolas: "",
   totalWeightKg: "",
   thanduPerKola: "",
@@ -41,6 +42,7 @@ export function AddStockEntryModal({
 }) {
   const { data, addBroker, addBatch } = useAppData();
   const [form, setForm] = useState(emptyForm);
+  const kayaType = form.kayaType || data.kayaTypes[0]?.name || "";
   const [isNewBroker, setIsNewBroker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,7 +95,7 @@ export function AddStockEntryModal({
 
       const batch = await addBatch({
         brokerId,
-        kayaType: form.kayaType,
+        kayaType,
         inwardQtyKolas: inward,
         totalWeightKg: weight,
         thanduPerKola: thandu || 1,
@@ -176,12 +178,12 @@ export function AddStockEntryModal({
         <Select
           label="Kaya Type"
           required
-          value={form.kayaType}
+          value={kayaType}
           onChange={(e) => set("kayaType", e.target.value)}
         >
-          {KAYA_TYPES.map((k) => (
-            <option key={k} value={k}>
-              {k}
+          {data.kayaTypes.map((k) => (
+            <option key={k.id} value={k.name}>
+              {k.name}
             </option>
           ))}
         </Select>
@@ -201,7 +203,7 @@ export function AddStockEntryModal({
             required
             type="number"
             min={0}
-            prefix="kg"
+            unit="kg"
             value={form.totalWeightKg}
             onChange={(e) => set("totalWeightKg", e.target.value)}
           />
@@ -225,11 +227,10 @@ export function AddStockEntryModal({
           />
         </div>
 
-        <Input
+        <DatePicker
           label="Arrival Date"
-          type="date"
           value={form.date}
-          onChange={(e) => set("date", e.target.value)}
+          onChange={(v) => set("date", v)}
         />
 
         {error && (

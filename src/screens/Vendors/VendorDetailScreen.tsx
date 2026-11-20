@@ -17,6 +17,7 @@ import { Button } from "@/src/components/ui/Button";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PaymentStatusBadge } from "@/src/components/domain/PaymentStatusBadge";
 import { DateRangeFilter } from "@/src/components/domain/DateRangeFilter";
+import { VendorFormModal } from "@/src/components/domain/AddVendorModal";
 import {
   ALL_TIME,
   inRange,
@@ -35,6 +36,7 @@ export function VendorDetailScreen({
 }) {
   const { data } = useAppData();
   const [range, setRange] = useState<PeriodRange>(initialRange);
+  const [editOpen, setEditOpen] = useState(false);
   const filtered = !isAllTime(range);
   const phrase = rangePhrase(range);
 
@@ -50,10 +52,10 @@ export function VendorDetailScreen({
     return (
       <EmptyState
         icon={<Icon.AlertCircle className="h-6 w-6" />}
-        title="Vendor not found"
+        title="Customer not found"
         action={
           <Link href="/vendors">
-            <Button size="sm">Back to Vendors</Button>
+            <Button size="sm">Back to Customers</Button>
           </Link>
         }
       />
@@ -100,12 +102,19 @@ export function VendorDetailScreen({
             </p>
           </div>
         </div>
-        <Badge tone={overallPending > 0 ? "danger" : "success"}>
-          {overallPending > 0
-            ? `${formatCurrency(overallPending)} pending in total`
-            : "Fully settled"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={overallPending > 0 ? "danger" : "success"}>
+            {overallPending > 0
+              ? `${formatCurrency(overallPending)} pending in total`
+              : "Fully settled"}
+          </Badge>
+          <Button variant="secondary" onClick={() => setEditOpen(true)}>
+            <Icon.Edit className="h-4 w-4" /> Edit
+          </Button>
+        </div>
       </div>
+
+      <VendorFormModal open={editOpen} vendor={vendor} onClose={() => setEditOpen(false)} />
 
       <DateRangeFilter value={range} onApply={setRange} />
 
@@ -145,8 +154,8 @@ export function VendorDetailScreen({
               title={filtered ? `No sales ${phrase}` : "No dispatches yet"}
               description={
                 filtered
-                  ? "This vendor had no sales in this period. Try other dates, or press Clear to see all."
-                  : "Transactions with this vendor will appear here, grouped by day."
+                  ? "This customer had no sales in this period. Try other dates, or press Clear to see all."
+                  : "Transactions with this customer will appear here, grouped by day."
               }
             />
           ) : (

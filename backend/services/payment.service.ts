@@ -46,7 +46,7 @@ export async function createPayment(input: PaymentInput) {
     !mongoose.isValidObjectId(input.vendorId) ||
     !(await Vendor.exists({ _id: input.vendorId }))
   ) {
-    throw new ApiError(400, "Select an existing vendor");
+    throw new ApiError(400, "Select an existing customer");
   }
 
   const session = await mongoose.startSession();
@@ -59,7 +59,7 @@ export async function createPayment(input: PaymentInput) {
 
       const outstanding = round2(pending.reduce((s, d) => s + d.balanceDue, 0));
       if (outstanding <= 0) {
-        throw new ApiError(400, "This vendor has no pending balance");
+        throw new ApiError(400, "This customer has no pending balance");
       }
       if (amount > outstanding) {
         throw new ApiError(

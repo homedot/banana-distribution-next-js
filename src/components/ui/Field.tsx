@@ -48,10 +48,14 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "prefix
   hint?: string;
   error?: string;
   prefix?: ReactNode;
+  /** Interactive element on the right, e.g. a show/hide password button. */
+  suffix?: ReactNode;
+  /** Unit shown after the value, inside the field on the right, e.g. "kg". */
+  unit?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, required, className, prefix, ...props },
+  { label, hint, error, required, className, prefix, suffix, unit, ...props },
   ref
 ) {
   const hasPrefix = Boolean(prefix);
@@ -69,11 +73,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             baseFieldClasses,
             "h-11",
             hasPrefix && "pl-8",
+            Boolean(suffix) && "pr-12",
+            // Leave room for the unit so typed digits never run under it.
+            Boolean(unit) && !suffix && (unit!.length > 3 ? "pr-[4.25rem]" : "pr-12"),
             error && "border-red-300 focus:border-red-400 focus:ring-red-100",
             className
           )}
           {...props}
         />
+        {suffix && (
+          <span className="absolute inset-y-0 right-1 flex items-center">{suffix}</span>
+        )}
+        {unit && !suffix && (
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-sand-500">
+            {unit}
+          </span>
+        )}
       </div>
     </FieldShell>
   );

@@ -1,9 +1,9 @@
 "use client";
 
-import { calcGrossTotal, calcNetPayable } from "@/src/utils/calculations";
-import { formatCurrency } from "@/src/utils/format";
+import { calcNetPayable } from "@/src/utils/calculations";
+import { formatCurrency, formatNumber } from "@/src/utils/format";
 import { Input } from "@/src/components/ui/Field";
-import type { WizardState } from "@/src/screens/Sales/wizard/types";
+import { saleTotals, type WizardState } from "@/src/screens/Sales/wizard/types";
 import type { RateBasis } from "@/src/types";
 
 export function StepPricing({
@@ -13,12 +13,9 @@ export function StepPricing({
   state: WizardState;
   update: (patch: Partial<WizardState>) => void;
 }) {
-  const rate = Number(state.dailySellingRate) || 0;
-  const weight = Number(state.totalWeight) || 0;
-  const kolas = Number(state.kolaQuantity) || 0;
+  const { lines, grossTotal } = saleTotals(state);
   const discount = Number(state.discount) || 0;
-
-  const grossTotal = calcGrossTotal(state.rateBasis, rate, weight, kolas);
+  const perKg = state.rateBasis === "per_kg";
   const netPayable = calcNetPayable(grossTotal, discount);
 
   return (
@@ -45,17 +42,57 @@ export function StepPricing({
         </div>
       </div>
 
-      <Input
-        label="Daily Selling Rate"
-        required
-        type="number"
-        min={0}
-        step="0.01"
-        prefix="₹"
-        placeholder="Current market rate"
-        value={state.dailySellingRate}
-        onChange={(e) => update({ dailySellingRate: e.target.value })}
-      />
+      <div className="flex flex-col gap-3">
+        <span className="text-[13px] font-semibold text-sand-700">
+          Selling Rate per Kaya
+          <span className="ml-0.5 text-banana-600">*</span>
+        </span>
+
+        {lines.length === 0 ? (
+          <p className="rounded-xl bg-sand-50 px-3.5 py-3 text-[13px] text-sand-500">
+            Select kaya types above to set a rate for each.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {lines.map((line) => (
+              <div
+                key={line.kayaType}
+                className="grid items-end gap-3 rounded-2xl border border-sand-200 p-4 sm:grid-cols-[1fr_auto]"
+              >
+                <Input
+                  label={`${line.kayaType} — ${perKg ? "rate per kg" : "rate per kola"}`}
+                  required
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  prefix="₹"
+                  placeholder="Today's rate"
+                  value={state.kayaRates[line.kayaType] ?? ""}
+                  onChange={(e) =>
+                    update({
+                      kayaRates: {
+                        ...state.kayaRates,
+                        [line.kayaType]: e.target.value,
+                      },
+                    })
+                  }
+                />
+                <div className="text-right sm:min-w-40 sm:pb-2.5">
+                  <p className="text-[12px] text-sand-500">
+                    {perKg
+                      ? `${formatNumber(line.totalWeight, 2)} kg`
+                      : `${formatNumber(line.kolaQuantity)} kolas`}{" "}
+                    × {formatCurrency(line.sellingRate)}
+                  </p>
+                  <p className="text-[15px] font-bold text-sand-900">
+                    {formatCurrency(line.amount)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center justify-between rounded-xl bg-sand-50 px-4 py-3">
         <span className="text-[13px] font-semibold text-sand-600">
