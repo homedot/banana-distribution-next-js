@@ -54,7 +54,10 @@ const SaleSchema = new Schema(
     },
     kolaQuantity: { type: Number, required: true, min: 0 },
     totalWeight: { type: Number, required: true, min: 0 },
+    // Legacy stem count; new sales record thanduWeight (kg) instead.
     thanduCount: { type: Number, default: 0, min: 0 },
+    // Thandu (stem) weight in kg, taken off the kola weight. `totalWeight` is the net weight.
+    thanduWeight: { type: Number, default: 0, min: 0 },
     rateBasis: { type: String, enum: ["per_kola", "per_kg"], required: true },
     dailySellingRate: { type: Number, required: true, min: 0 },
     grossTotal: { type: Number, required: true, min: 0 },

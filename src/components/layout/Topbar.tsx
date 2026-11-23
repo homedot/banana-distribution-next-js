@@ -13,6 +13,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/vendors": { title: "Customers", subtitle: "Shopkeeper ledgers & balances" },
   "/payments": { title: "Payments", subtitle: "Record customer payments against pending balances" },
   "/kola-categories": { title: "Kola Categories", subtitle: "Kaya types offered on New Sale" },
+  "/activity": { title: "Activity Log", subtitle: "Who created, edited or deleted what" },
   "/reports": { title: "Reports", subtitle: "Performance across the business" },
 };
 

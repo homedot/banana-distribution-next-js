@@ -243,4 +243,5 @@ export const NAV_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
   chart: Icon.Chart,
   wallet: Icon.Wallet,
   banana: Icon.Banana,
+  clock: Icon.Clock,
 };

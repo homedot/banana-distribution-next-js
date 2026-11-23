@@ -22,7 +22,7 @@ layers and add its `route.ts` files under `app/api/`.
    your MongoDB Atlas cluster's "Connect" dialog) and `JWT_SECRET` (generate
    one with `openssl rand -base64 48`).
 2. `npm install`
-3. `npm run seed:admin` — creates/resets the admin login user (safe to re-run; upserts by email).
+3. `npm run seed:admin` — creates/resets the admin and accountant login users (safe to re-run; upserts by email).
 4. `npm run dev`
 
 ## API

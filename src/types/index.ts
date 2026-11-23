@@ -60,7 +60,7 @@ export interface SaleKayaItem {
   kolaQuantity: number;
   /** Missing on items saved before per-kaya quality; fall back to the sale's. */
   qualityCategory?: QualityCategory;
-  /** kg for this kaya type. Missing on items saved before per-kaya pricing. */
+  /** kg entered for this kaya type, before thandu. Missing on items saved before per-kaya pricing. */
   totalWeight?: number;
   /** Rate for this kaya type, per the sale's rateBasis. Missing on items saved before per-kaya pricing. */
   sellingRate?: number;
@@ -80,8 +80,12 @@ export interface Sale {
   /** Overall grade: the kaya items' shared grade, or "Mixed" when they differ. */
   qualityCategory: QualityCategory;
   kolaQuantity: number;
+  /** Net kola weight in kg — the kaya weights minus thanduWeight. */
   totalWeight: number;
+  /** Legacy stem count; new sales record thanduWeight instead. */
   thanduCount: number;
+  /** Thandu (stem) weight in kg taken off the kola weight. Missing on older sales. */
+  thanduWeight?: number;
   rateBasis: RateBasis;
   /** Average rate across the kaya items (grossTotal ÷ kolas or kg); each item has its own `sellingRate`. */
   dailySellingRate: number;
@@ -133,4 +137,34 @@ export interface AppData {
   vendors: Vendor[];
   sales: Sale[];
   payments: Payment[];
+}
+
+export type ActivityAction = "create" | "update" | "delete";
+export type ActivityEntity = "sale" | "customer" | "payment" | "kola_category" | "broker" | "batch";
+
+export interface ActivityChange {
+  /** Field path, e.g. "amountCollected" or "paymentDetails.upiId". */
+  field: string;
+  from: unknown;
+  to: unknown;
+}
+
+/** One audit entry: who created, edited or deleted which record, and when. */
+export interface ActivityEntry {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userRole: "admin" | "accountant";
+  action: ActivityAction;
+  entity: ActivityEntity;
+  entityId: string;
+  label: string;
+  detail: string;
+  changes: ActivityChange[];
+  createdAt: string;
+}
+
+export interface ActivityPage {
+  items: ActivityEntry[];
+  hasMore: boolean;
 }

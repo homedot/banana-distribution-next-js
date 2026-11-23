@@ -11,28 +11,51 @@ import { goToLogin } from "@/src/lib/auth-navigation";
 
 // One /api/auth/me request per page load, shared by every caller. Login and
 // logout both do a full page load, so this never outlives the session it's for.
-let mePromise: Promise<string | null> | null = null;
-function fetchEmail() {
+export type UserRole = "admin" | "accountant";
+interface CurrentUser {
+  email: string;
+  role: UserRole;
+}
+
+let mePromise: Promise<CurrentUser | null> | null = null;
+function fetchMe() {
   mePromise ??= fetch("/api/auth/me")
     .then((r) => (r.ok ? r.json() : null))
-    .then((body) => (body?.success ? (body.data.user.email as string) : null))
+    .then((body): CurrentUser | null =>
+      body?.success
+        ? {
+            email: body.data.user.email as string,
+            role: body.data.user.role === "accountant" ? "accountant" : "admin",
+          }
+        : null
+    )
     .catch(() => null);
   return mePromise;
 }
 
-/** The signed-in user's email, or null while loading / if unknown. */
-export function useCurrentUserEmail() {
-  const [email, setEmail] = useState<string | null>(null);
+/** The signed-in user, or null while loading / if unknown. */
+function useCurrentUser() {
+  const [user, setUser] = useState<CurrentUser | null>(null);
   useEffect(() => {
     let ignore = false;
-    fetchEmail().then((e) => {
-      if (!ignore) setEmail(e);
+    fetchMe().then((u) => {
+      if (!ignore) setUser(u);
     });
     return () => {
       ignore = true;
     };
   }, []);
-  return email;
+  return user;
+}
+
+/** The signed-in user's email, or null while loading / if unknown. */
+export function useCurrentUserEmail() {
+  return useCurrentUser()?.email ?? null;
+}
+
+/** The signed-in user's role, or null while loading / if unknown. */
+export function useCurrentUserRole() {
+  return useCurrentUser()?.role ?? null;
 }
 
 /**

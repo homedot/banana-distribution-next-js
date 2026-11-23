@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server";
 import * as kayaTypeService from "@/backend/services/kayaType.service";
+import { plain, recordActivity } from "@/backend/services/activity.service";
+import { actorFrom } from "@/backend/utils/actor";
 import { success } from "@/backend/utils/response";
 import { asyncHandler } from "@/backend/utils/asyncHandler";
 
@@ -11,13 +13,17 @@ export const listKayaTypes = asyncHandler(async () => {
 });
 
 export const createKayaType = asyncHandler(async (request: NextRequest) => {
+  const actor = actorFrom(request);
   const body = await request.json();
   const kayaType = await kayaTypeService.createKayaType(body);
+  await recordActivity({ actor, action: "create", entity: "kola_category", after: plain(kayaType) });
   return success(kayaType, 201);
 });
 
-export const deleteKayaType = asyncHandler<IdParams>(async (_request, { params }) => {
+export const deleteKayaType = asyncHandler<IdParams>(async (request, { params }) => {
+  const actor = actorFrom(request);
   const { id } = await params;
-  await kayaTypeService.deleteKayaType(id);
+  const kayaType = await kayaTypeService.deleteKayaType(id);
+  await recordActivity({ actor, action: "delete", entity: "kola_category", before: plain(kayaType) });
   return success({ id });
 });

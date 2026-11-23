@@ -17,12 +17,15 @@ export async function login({ email, password }: LoginInput) {
     throw new ApiError(400, "Email and password are required");
   }
 
-  const user = await User.findOne({ email: normalizedEmail }).select("+passwordHash");
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    "+passwordHash",
+  );
   if (!user) throw new ApiError(401, "Invalid email or password");
 
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) throw new ApiError(401, "Invalid email or password");
 
-  const token = signAuthToken({ sub: user.id, email: user.email });
-  return { token, user: { id: user.id, email: user.email } };
+  const role = user.role === "accountant" ? "accountant" : "admin";
+  const token = signAuthToken({ sub: user.id, email: user.email, role });
+  return { token, user: { id: user.id, email: user.email, role } };
 }

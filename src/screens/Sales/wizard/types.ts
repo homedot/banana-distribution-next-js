@@ -20,7 +20,10 @@ export interface WizardState {
   kayaWeights: Record<string, string>;
   /** Selling rate for each selected kaya type (per kola or per kg), keyed by kaya type. */
   kayaRates: Record<string, string>;
+  /** Legacy stem count — kept so editing an older sale doesn't drop it. Not shown in the form. */
   thanduCount: string;
+  /** Thandu (stem) weight in kg, subtracted from the total kola weight. */
+  thanduWeight: string;
   rateBasis: RateBasis;
   discount: string;
   amountCollected: string;
@@ -151,7 +154,9 @@ export const emptyWizardState: WizardState = {
   kayaWeights: {},
   kayaRates: {},
   thanduCount: "",
-  rateBasis: "per_kola",
+  thanduWeight: "",
+  // rateBasis: "per_kola", // Per Kola pricing hidden — new sales default to Per Kg
+  rateBasis: "per_kg",
   discount: "",
   amountCollected: "",
   paymentMethod: "cash",
@@ -171,35 +176,51 @@ const round2 = (n: number) => (Number.isFinite(n) ? Math.round(n * 100) / 100 : 
 export interface KayaLine {
   kayaType: string;
   kolaQuantity: number;
+  /** Weight entered for this kaya type, before thandu. */
   totalWeight: number;
+  /** totalWeight minus this kaya's share of the thandu weight (split by weight). */
+  netWeight: number;
   sellingRate: number;
   qualityCategory: QualityCategory;
-  /** sellingRate × kolas (per kola) or × kg (per kg). */
+  /** sellingRate × kolas (per kola) or × net kg (per kg). */
   amount: number;
 }
 
-/** One priced line per selected kaya type, plus the sale's totals. */
+/**
+ * One priced line per selected kaya type, plus the sale's totals.
+ * Thandu weight is taken off the total kola weight; with several kaya types
+ * it is split across them in proportion to their weight.
+ */
 export function saleTotals(state: WizardState) {
+  const grossWeight = round2(
+    state.kayaTypes.reduce((s, k) => s + (Number(state.kayaWeights[k]) || 0), 0),
+  );
+  const thanduWeight = Math.max(0, Number(state.thanduWeight) || 0);
+  const weight = round2(Math.max(0, grossWeight - thanduWeight));
+  const netShare = grossWeight > 0 ? weight / grossWeight : 0;
+
   const lines: KayaLine[] = state.kayaTypes.map((kayaType) => {
     const kolaQuantity = Number(state.kayaQuantities[kayaType]) || 0;
     const totalWeight = Number(state.kayaWeights[kayaType]) || 0;
+    const netWeight = round2(totalWeight * netShare);
     const sellingRate = Number(state.kayaRates[kayaType]) || 0;
-    const basisQty = state.rateBasis === "per_kg" ? totalWeight : kolaQuantity;
+    const basisQty = state.rateBasis === "per_kg" ? netWeight : kolaQuantity;
     return {
       kayaType,
       kolaQuantity,
       totalWeight,
+      netWeight,
       sellingRate,
       qualityCategory: kayaQuality(state, kayaType),
       amount: round2(sellingRate * basisQty),
     };
   });
   const kolas = lines.reduce((s, l) => s + l.kolaQuantity, 0);
-  const weight = round2(lines.reduce((s, l) => s + l.totalWeight, 0));
   const grossTotal = round2(lines.reduce((s, l) => s + l.amount, 0));
   const basisTotal = state.rateBasis === "per_kg" ? weight : kolas;
   const averageRate = basisTotal > 0 ? round2(grossTotal / basisTotal) : 0;
-  return { lines, kolas, weight, grossTotal, averageRate };
+  /** `weight` is the net weight (after thandu); `grossWeight` is before. */
+  return { lines, kolas, grossWeight, thanduWeight, weight, grossTotal, averageRate };
 }
 
 export const DEFAULT_KAYA_QUALITY: QualityCategory = "Grade A";
@@ -257,7 +278,8 @@ export function wizardStateFromSale(d: Sale): WizardState {
     kayaQualities: kayaQualitiesFromSale(d, kayaTypes),
     kayaWeights: pricing.weights,
     kayaRates: pricing.rates,
-    thanduCount: String(d.thanduCount),
+    thanduCount: String(d.thanduCount ?? 0),
+    thanduWeight: d.thanduWeight ? String(d.thanduWeight) : "",
     rateBasis: d.rateBasis,
     discount: String(d.discount || ""),
     amountCollected: String(d.amountCollected ?? 0),

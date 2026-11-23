@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 import { Icon, NAV_ICONS } from "@/src/components/icons";
 import { NAV_ITEMS } from "@/src/utils/constants";
 import { cn } from "@/src/utils/cn";
-import { LogoutButton, useCurrentUserEmail } from "@/src/components/layout/AccountControls";
+import {
+  LogoutButton,
+  useCurrentUserEmail,
+  useCurrentUserRole,
+} from "@/src/components/layout/AccountControls";
 import { BrandMark } from "@/src/components/brand/BrandLogo";
 
 function SidebarAccount({ onCloseMobile }: { onCloseMobile: () => void }) {
@@ -38,6 +42,12 @@ export function Sidebar({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
+  const role = useCurrentUserRole();
+  // Admin-only links (Dashboard) stay hidden until the role is known, so an
+  // accountant never sees them flash in.
+  const navItems = NAV_ITEMS.filter(
+    (item) => !("adminOnly" in item && item.adminOnly) || role === "admin",
+  );
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -75,7 +85,7 @@ export function Sidebar({
           <p className="px-2.5 pb-2 pt-3 text-[11px] font-bold uppercase tracking-wider text-forest-400">
             Operations
           </p>
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const ItemIcon = iconMap[item.icon];
             const active = isActive(item.href);
             return (

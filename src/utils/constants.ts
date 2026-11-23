@@ -18,11 +18,12 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 export const SERVICE_AREAS = ["Ernakulam", "Thrissur"] as const;
 
 export const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: "grid" },
+  { href: "/", label: "Dashboard", icon: "grid", adminOnly: true },
   { href: "/distributions", label: "Sales", icon: "truck" },
   { href: "/vendors", label: "Customers", icon: "store" },
   { href: "/payments", label: "Payments", icon: "wallet" },
   { href: "/kola-categories", label: "Kola Categories", icon: "banana" },
+  { href: "/activity", label: "Activity Log", icon: "clock", adminOnly: true },
   // Hidden from navigation for now — pages remain reachable directly.
   // { href: "/brokers", label: "Brokers", icon: "package" },
   // { href: "/reports", label: "Reports", icon: "chart" },

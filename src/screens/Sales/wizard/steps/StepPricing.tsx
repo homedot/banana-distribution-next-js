@@ -25,7 +25,9 @@ export function StepPricing({
           Rate Basis
         </span>
         <div className="flex rounded-xl border border-sand-200 bg-sand-50 p-1">
-          {(["per_kola", "per_kg"] as RateBasis[]).map((basis) => (
+          {/* Per Kola pricing is hidden for now — only Per Kg is offered. */}
+          {/* {(["per_kola", "per_kg"] as RateBasis[]).map((basis) => ( */}
+          {(["per_kg"] as RateBasis[]).map((basis) => (
             <button
               key={basis}
               type="button"
@@ -80,7 +82,7 @@ export function StepPricing({
                 <div className="text-right sm:min-w-40 sm:pb-2.5">
                   <p className="text-[12px] text-sand-500">
                     {perKg
-                      ? `${formatNumber(line.totalWeight, 2)} kg`
+                      ? `${formatNumber(line.netWeight, 2)} kg net`
                       : `${formatNumber(line.kolaQuantity)} kolas`}{" "}
                     × {formatCurrency(line.sellingRate)}
                   </p>

@@ -1,5 +1,5 @@
 import { currentPath, goToLogin, readJson } from "@/src/lib/auth-navigation";
-import type { Broker, BrokerBatch, KayaType, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
+import type { ActivityPage, Broker, BrokerBatch, KayaType, Payment, PaymentInput, Sale, Vendor } from "@/src/types";
 
 interface ApiSuccess<T> {
   success: true;
@@ -100,5 +100,13 @@ export const api = {
       }),
     remove: (id: string) =>
       request<{ id: string; sales: Sale[] }>(`/api/payments/${id}`, { method: "DELETE" }),
+  },
+  activity: {
+    list: (params: { role?: string; entity?: string; action?: string; before?: string } = {}) => {
+      const q = new URLSearchParams(
+        Object.entries(params).filter((e): e is [string, string] => Boolean(e[1])),
+      ).toString();
+      return request<ActivityPage>(`/api/activity${q ? `?${q}` : ""}`);
+    },
   },
 };

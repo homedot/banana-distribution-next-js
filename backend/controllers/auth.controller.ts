@@ -5,6 +5,7 @@ import {
   AUTH_COOKIE_NAME,
   AUTH_COOKIE_MAX_AGE_SECONDS,
   verifyAuthToken,
+  roleOf,
 } from "@/backend/utils/jwt";
 import { ApiError } from "@/backend/utils/ApiError";
 import { success } from "@/backend/utils/response";
@@ -38,7 +39,7 @@ export const me = asyncHandler(async (request: NextRequest) => {
 
   try {
     const payload = verifyAuthToken(token);
-    return success({ user: { id: payload.sub, email: payload.email } });
+    return success({ user: { id: payload.sub, email: payload.email, role: roleOf(payload) } });
   } catch {
     throw new ApiError(401, "Session expired, please log in again");
   }

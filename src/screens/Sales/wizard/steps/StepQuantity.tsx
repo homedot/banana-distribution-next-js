@@ -18,7 +18,12 @@ export function StepQuantity({
   state: WizardState;
   update: (patch: Partial<WizardState>) => void;
 }) {
-  const { kolas: totalKolas, weight: totalWeight } = saleTotals(state);
+  const {
+    kolas: totalKolas,
+    grossWeight: totalWeight,
+    thanduWeight,
+    weight: netWeight,
+  } = saleTotals(state);
 
   return (
     <div className="space-y-5">
@@ -105,6 +110,7 @@ export function StepQuantity({
       </div>
 
 
+      {/* Old stem-count field — replaced by thandu weight in kg below.
       <Input
         label="Thandu Count"
         required
@@ -117,6 +123,36 @@ export function StepQuantity({
         value={state.thanduCount}
         onChange={(e) => update({ thanduCount: e.target.value })}
       />
+      */}
+      <Input
+        label="Thandu Count"
+        type="number"
+        min={0}
+        step="0.01"
+        inputMode="decimal"
+        unit="kg"
+        placeholder="e.g. 25"
+        hint="Weight of the thandu (stems), taken off the total kola weight"
+        value={state.thanduWeight}
+        onChange={(e) => update({ thanduWeight: e.target.value })}
+      />
+
+      {state.kayaTypes.length > 0 && (
+        <div className="space-y-1.5 rounded-xl bg-sand-50 px-4 py-3 text-[13px]">
+          <div className="flex justify-between text-sand-600">
+            <span>Total Kola Weight</span>
+            <span className="font-semibold text-sand-900">{formatNumber(totalWeight, 2)} kg</span>
+          </div>
+          <div className="flex justify-between text-sand-600">
+            <span>− Thandu</span>
+            <span className="font-semibold text-sand-900">{formatNumber(thanduWeight, 2)} kg</span>
+          </div>
+          <div className="flex justify-between border-t border-sand-200 pt-1.5 font-bold text-forest-800">
+            <span>Net Weight</span>
+            <span>{formatNumber(netWeight, 2)} kg</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -165,14 +165,29 @@ export function SaleDetailScreen({ id }: { id: string }) {
                 label={(sale.kayaItems?.length ?? 0) > 1 ? "Total Kola Quantity" : "Kola Quantity"}
                 value={`${formatNumber(sale.kolaQuantity)} kolas`}
               />
+              {(sale.thanduWeight ?? 0) > 0 && (
+                <>
+                  <DetailRow
+                    label="Total Kola Weight"
+                    value={`${formatNumber(sale.totalWeight + sale.thanduWeight!, 2)} kg`}
+                  />
+                  <DetailRow
+                    label="Thandu Count"
+                    value={`− ${formatNumber(sale.thanduWeight!, 2)} kg`}
+                  />
+                </>
+              )}
               <DetailRow
-                label="Total Weight"
-                value={`${formatNumber(sale.totalWeight)} kg`}
+                label={(sale.thanduWeight ?? 0) > 0 ? "Net Weight" : "Total Weight"}
+                value={`${formatNumber(sale.totalWeight, 2)} kg`}
               />
-              <DetailRow
-                label="Thandu Count"
-                value={formatNumber(sale.thanduCount)}
-              />
+              {/* Older sales recorded thandu as a stem count, not kg. */}
+              {!sale.thanduWeight && sale.thanduCount > 0 && (
+                <DetailRow
+                  label="Thandu Count"
+                  value={formatNumber(sale.thanduCount)}
+                />
+              )}
             </CardBody>
           </Card>
 

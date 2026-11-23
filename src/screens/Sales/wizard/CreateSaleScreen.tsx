@@ -69,6 +69,11 @@ function validateStep(index: number, state: WizardState): string | null {
           return `Enter the kola quantity for ${k}`;
         if (!positive(state.kayaWeights[k])) return `Enter the weight for ${k}`;
       }
+      const thandu = Number(state.thanduWeight) || 0;
+      if (thandu < 0) return "Thandu weight can't be negative";
+      const { grossWeight } = saleTotals(state);
+      if (thandu >= grossWeight)
+        return "Thandu weight must be less than the total kola weight";
       return null;
     }
     case 2: {
@@ -183,7 +188,7 @@ function SaleForm({ existing }: { existing?: Sale }) {
     setError(null);
   }
 
-  const { lines, kolas, weight, grossTotal, averageRate } = saleTotals(state);
+  const { lines, kolas, weight, thanduWeight, grossTotal, averageRate } = saleTotals(state);
   const discount = Number(state.discount) || 0;
   const collected = Number(state.amountCollected) || 0;
 
@@ -221,6 +226,7 @@ function SaleForm({ existing }: { existing?: Sale }) {
       kolaQuantity: kolas,
       totalWeight: weight,
       thanduCount: thandu,
+      thanduWeight,
       rateBasis: state.rateBasis,
       dailySellingRate: averageRate,
       grossTotal,

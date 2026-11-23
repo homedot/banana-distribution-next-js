@@ -23,6 +23,8 @@ export interface SaleInput {
   kolaQuantity: number;
   totalWeight: number;
   thanduCount: number;
+  /** Thandu (stem) weight in kg, subtracted from the kola weight. */
+  thanduWeight?: number;
   rateBasis: "per_kola" | "per_kg";
   dailySellingRate: number;
   grossTotal: number;
@@ -123,14 +125,28 @@ function normalizeKaya(input: SaleInput): SaleInput {
   if (kayaItems.every((i) => i.totalWeight !== undefined && i.sellingRate !== undefined)) {
     const round2 = (n: number) => Math.round(n * 100) / 100;
     const perKg = input.rateBasis === "per_kg";
-    const totalWeight = round2(kayaItems.reduce((s, i) => s + i.totalWeight!, 0));
+    const grossWeight = round2(kayaItems.reduce((s, i) => s + i.totalWeight!, 0));
+    // Thandu weight comes off the kola weight; with several kaya types it is
+    // split across them in proportion to their weight (mirrors the New Sale form).
+    const thanduWeight = Number(input.thanduWeight) || 0;
+    if (!Number.isFinite(thanduWeight) || thanduWeight < 0)
+      throw new ApiError(400, "Enter a valid thandu weight");
+    if (thanduWeight > 0 && thanduWeight >= grossWeight)
+      throw new ApiError(400, "Thandu weight must be less than the total kola weight");
+    const totalWeight = round2(Math.max(0, grossWeight - thanduWeight));
+    const netShare = grossWeight > 0 ? totalWeight / grossWeight : 0;
     const grossTotal = round2(
-      kayaItems.reduce((s, i) => s + round2(i.sellingRate! * (perKg ? i.totalWeight! : i.kolaQuantity)), 0),
+      kayaItems.reduce(
+        (s, i) =>
+          s + round2(i.sellingRate! * (perKg ? round2(i.totalWeight! * netShare) : i.kolaQuantity)),
+        0,
+      ),
     );
     const basis = perKg ? totalWeight : kolaQuantity;
     const netPayable = Math.max(0, round2(grossTotal - (Number(input.discount) || 0)));
     Object.assign(normalized, {
       totalWeight,
+      thanduWeight,
       grossTotal,
       dailySellingRate: basis > 0 ? round2(grossTotal / basis) : 0,
       netPayable,
